@@ -1,0 +1,103 @@
+const request = require("request-promise");
+const cheerio = require("cheerio");
+const { vlrgg_url } = require("../constants");
+
+/**
+ * Retrieves detailed information about a specific match from VLR.
+ * @param {string} matchId - The unique ID of the match.
+ * @returns {Object} An object containing detailed match information.
+ */
+async function getMatchDetails(matchId) {
+  // Send a request to the match page URL and parse the HTML response
+  const $ = await request({
+    uri: `${vlrgg_url}/${matchId}`,
+    transform: (body) => cheerio.load(body),
+  });
+
+  // Extract main match details
+  const matchDetails = {
+    id: matchId,
+    event: $(".match-header-event span").text().trim(),
+    tournament: $(".match-header-event a").text().trim(),
+    date: $(".match-header-date").text().trim(),
+    teams: [],
+    maps: [],
+  };
+
+  // Extract teams' information
+  $(".wf-card.match-header .match-header-link-name").each((index, element) => {
+    const team = {
+      name: $(element).text().trim(),
+      score: parseInt(
+        $(element)
+          .closest(".match-header-link")
+          .find(".match-header-vs-score")
+          .eq(index)
+          .text()
+          .trim(),
+        10
+      ),
+    };
+    matchDetails.teams.push(team);
+  });
+
+  // Extract map details
+  $(".vm-stats-game").each((index, element) => {
+    const map = {
+      name: $(element).find(".map").text().trim(),
+      result: $(element).find(".score").text().trim(),
+      rounds: [],
+      players: [],
+    };
+
+    // Extract round details
+    $(element)
+      .find(".round-history-item")
+      .each((i, roundElement) => {
+        map.rounds.push({
+          round: i + 1,
+          result: $(roundElement).attr("class").includes("win")
+            ? "win"
+            : "loss",
+          side: $(roundElement).hasClass("attacking")
+            ? "attack"
+            : "defense",
+        });
+      });
+
+    // Extract player statistics
+    $(element)
+      .find(".mod-stat")
+      .each((i, playerElement) => {
+        const player = {
+          name: $(playerElement).find(".text-of").text().trim(),
+          agent: $(playerElement)
+            .find(".agent-icon img")
+            .attr("alt")
+            .trim(),
+          stats: {
+            kills: parseInt($(playerElement).find(".mod-stat-kills").text(), 10),
+            deaths: parseInt(
+              $(playerElement).find(".mod-stat-deaths").text(),
+              10
+            ),
+            assists: parseInt(
+              $(playerElement).find(".mod-stat-assists").text(),
+              10
+            ),
+            ACS: parseInt($(playerElement).find(".mod-stat-acs").text(), 10),
+            KD: parseFloat($(playerElement).find(".mod-stat-kd").text()),
+          },
+        };
+        map.players.push(player);
+      });
+
+    matchDetails.maps.push(map);
+  });
+
+  return matchDetails;
+}
+
+module.exports = {
+  getMatchDetails,
+};
