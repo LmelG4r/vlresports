@@ -23,6 +23,12 @@ app.use("/api/v1/events", require("./versions/v1/routes/events"));
 app.use("/api/v1/matches", require("./versions/v1/routes/matches"));
 app.use("/api/v1/results", require("./versions/v1/routes/results"));
 
+
+// Rutas de partidos y detalles de partidos
+app.use("/api/v1/matches", require("./versions/v1/routes/matches"));
+app.use("/api/v1/matches/:id/details", require("./versions/v1/routes/matchDetails"));  // Nueva ruta para detalles del partido
+
+
 // Starting server
 app.listen(app.get("port"), () => {
   console.log(`Server running on port ${app.get("port")}`);
