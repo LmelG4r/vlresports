@@ -24,9 +24,8 @@ app.use("/api/v1/matches", require("./versions/v1/routes/matches"));
 app.use("/api/v1/results", require("./versions/v1/routes/results"));
 
 
-// Rutas de partidos y detalles de partidos
-app.use("/api/v1/matches", require("./versions/v1/routes/matches"));
-app.use("/api/v1/matches/:id/details", require("./versions/v1/routes/matchesr"));  // Nueva ruta para detalles del partido
+// src/index.js
+app.use('/api/v1/matches', require('./versions/v1/routes/matchesr'));
 
 
 // Starting server
