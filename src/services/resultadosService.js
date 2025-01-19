@@ -10,10 +10,90 @@ function scrapeTabData($, url) {
   return {}; // Retorna los datos relevantes
 }
 
-// Función para extraer rondas jugadas en cada mapa
-function scrapeRounds($, url) {
-  // Lógica para obtener las rondas desde cada URL específica del mapa.
-  return []; // Retorna las rondas con sus datos
+
+function scrapeOverview($) {
+    const overviewData = [];
+
+    // Recorremos cada fila de la tabla (tbody > tr)
+    $(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
+        const playerRow = $(el);
+
+        // Extraer información del jugador y su equipo
+        const playerName = playerRow.find(".mod-player .text-of").text().trim() || "Jugador no especificado";
+        const teamName = playerRow.find(".mod-player .ge-text-light").text().trim() || "Equipo no especificado";
+
+        // Extraer el agente (atributo "title" del <img>)
+        const agent = playerRow.find(".mod-agents img").attr("title") || "Agente no especificado";
+
+        // Extraer estadísticas
+        const stats = {
+            rating: {
+                both: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-ct").text().trim() || "0",
+            },
+            acs: {
+                both: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-ct").text().trim() || "0",
+            },
+            kills: {
+                both: playerRow.find(".mod-vlr-kills .mod-side.mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-vlr-kills .mod-side.mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-vlr-kills .mod-side.mod-ct").text().trim() || "0",
+            },
+            deaths: {
+                both: playerRow.find(".mod-vlr-deaths .mod-side.mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-vlr-deaths .mod-side.mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-vlr-deaths .mod-side.mod-ct").text().trim() || "0",
+            },
+            assists: {
+                both: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-ct").text().trim() || "0",
+            },
+            plusMinus: {
+                both: playerRow.find(".mod-stat").eq(3).find(".mod-side.mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(3).find(".mod-side.mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(3).find(".mod-side.mod-ct").text().trim() || "0",
+            },
+            kast: {
+                both: playerRow.find(".mod-stat").eq(4).find(".mod-side.mod-both").text().trim() || "0%",
+                attack: playerRow.find(".mod-stat").eq(4).find(".mod-side.mod-t").text().trim() || "0%",
+                defend: playerRow.find(".mod-stat").eq(4).find(".mod-side.mod-ct").text().trim() || "0%",
+            },
+            adr: {
+                both: playerRow.find(".mod-stat").eq(5).find(".mod-side.mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(5).find(".mod-side.mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(5).find(".mod-side.mod-ct").text().trim() || "0",
+            },
+            hs: {
+                both: playerRow.find(".mod-stat").eq(6).find(".mod-side.mod-both").text().trim() || "0%",
+                attack: playerRow.find(".mod-stat").eq(6).find(".mod-side.mod-t").text().trim() || "0%",
+                defend: playerRow.find(".mod-stat").eq(6).find(".mod-side.mod-ct").text().trim() || "0%",
+            },
+            fk: {
+                both: playerRow.find(".mod-stat").eq(7).find(".mod-side.mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(7).find(".mod-side.mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(7).find(".mod-side.mod-ct").text().trim() || "0",
+            },
+            fd: {
+                both: playerRow.find(".mod-stat").eq(8).find(".mod-side.mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(8).find(".mod-side.mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(8).find(".mod-side.mod-ct").text().trim() || "0",
+            },
+        };
+        
+        // Agregar los datos del jugador al array de resultados
+        overviewData.push({
+            playerName,
+            teamName,
+            agent,
+            stats,
+        });
+    });
+
+    return overviewData;
 }
 
   try {
@@ -51,7 +131,7 @@ function scrapeRounds($, url) {
       ],
       format: format || "Formato no especificado",
       mapPicksBans: mapPicksBans || "Mapas no especificados",
-      overview: {},
+      overview: scrapeOverview,
       performance: {},
       economy: {},
       maps: [],
