@@ -59,24 +59,24 @@ function scrapeOverview(html) {
                 defend: playerRow.find(".mod-stat").eq(4).find(".mod-ct").text().trim() || "0%",
             },
             adr: {
-                both: playerRow.find(".mod-stat").eq(5).find(".mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(5).find(".mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(5).find(".mod-side.mod-ct").text().trim() || "0",
+                both: playerRow.find(".mod-stat").eq(5).find(".mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(5).find(".mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(5).find(".mod-ct").text().trim() || "0",
             },
             hs: {
-                both: playerRow.find(".mod-stat").eq(6).find(".mod-side.mod-both").text().trim() || "0%",
-                attack: playerRow.find(".mod-stat").eq(6).find(".mod-side.mod-t").text().trim() || "0%",
-                defend: playerRow.find(".mod-stat").eq(6).find(".mod-side.mod-ct").text().trim() || "0%",
+                both: playerRow.find(".mod-stat").eq(6).find(".mod-both").text().trim() || "0%",
+                attack: playerRow.find(".mod-stat").eq(6).find(".mod-t").text().trim() || "0%",
+                defend: playerRow.find(".mod-stat").eq(6).find(".mod-ct").text().trim() || "0%",
             },
             fk: {
-                both: playerRow.find(".mod-stat").eq(7).find(".mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(7).find(".mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(7).find(".mod-side.mod-ct").text().trim() || "0",
+                both: playerRow.find(".mod-stat").eq(7).find(".mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(7).find(".mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(7).find(".mod-ct").text().trim() || "0",
             },
             fd: {
-                both: playerRow.find(".mod-stat").eq(8).find(".mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(8).find(".mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(8).find(".mod-side.mod-ct").text().trim() || "0",
+                both: playerRow.find(".mod-stat").eq(8).find(".mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-stat").eq(8).find(".mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
             },
         };
         
