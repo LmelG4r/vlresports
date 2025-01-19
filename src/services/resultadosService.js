@@ -67,25 +67,48 @@ function scrapeRounds($, url) {
   });
   
   // Extraer mapas jugados y su información
-  html(".vm-stats-gamesnav-item").each((i, el) => {
-      const isPlayed = !html(el).hasClass("mod-disabled");
-      if (isPlayed) {
-          const mapName = html(el).find("div").text().trim();
-          const pickText = html(el)
-              .find(".pick")
-              .text()
-              .replace("Pick:", "")
-              .trim();
-          const mapInfo = {
-              mapName,
-              pickBy: pickText || null,
-              winner: html(el).find(".team-tag").text().trim(),
-              rounds: scrapeRounds(html, html(el).attr("data-href")),
-          };
-  
-          matchData.maps.push(mapInfo);
-      }
-  });
+  html(".vm-stats-game").each((i, el) => {
+    const mapName = html(el).find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
+    const duration = html(el).find(".vm-stats-game-header .map-duration").text().trim();
+
+    const team1Name = html(el).find(".vm-stats-game-header .team .team-name").eq(0).text().trim();
+    const team2Name = html(el).find(".vm-stats-game-header .team .team-name").eq(1).text().trim();
+
+    const team1Score = html(el).find(".vm-stats-game-header .team .score").eq(0).text().trim();
+    const team2Score = html(el).find(".vm-stats-game-header .team .score").eq(1).text().trim();
+
+    const team1Rounds = {
+        ct: html(el).find(".vm-stats-game-header .team .mod-ct").eq(0).text().trim() || "0",
+        t: html(el).find(".vm-stats-game-header .team .mod-t").eq(0).text().trim() || "0",
+        ot: html(el).find(".vm-stats-game-header .team .mod-ot").eq(0).text().trim() || "0",
+    };
+
+    const team2Rounds = {
+        ct: html(el).find(".vm-stats-game-header .team .mod-ct").eq(1).text().trim() || "0",
+        t: html(el).find(".vm-stats-game-header .team .mod-t").eq(1).text().trim() || "0",
+        ot: html(el).find(".vm-stats-game-header .team .mod-ot").eq(1).text().trim() || "0",
+    };
+
+    const mapInfo = {
+        mapName: mapName || "Mapa no especificado",
+        duration: duration || "Duración no especificada",
+        teams: [
+            {
+                name: team1Name || "Equipo 1 no especificado",
+                score: team1Score || "0",
+                rounds: team1Rounds,
+            },
+            {
+                name: team2Name || "Equipo 2 no especificado",
+                score: team2Score || "0",
+                rounds: team2Rounds,
+            },
+        ],
+    };
+
+    matchData.maps.push(mapInfo);
+});
+
   
   return matchData;
   
