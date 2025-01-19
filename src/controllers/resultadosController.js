@@ -19,6 +19,4 @@ const getMatchDetails = (req, res) => {
 
 
 
-module.exports = {
-  getMatchDetails
-};
+module.exports = { getMatchDetails };

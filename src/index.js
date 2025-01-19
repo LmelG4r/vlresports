@@ -1,7 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
 let cors = require("cors");
-
+const resultadosRouter = require("./versions/v1/routes/resultados");
 const app = express();
 
 // Settings
@@ -25,7 +25,7 @@ app.use("/api/v1/results", require("./versions/v1/routes/results"));
 
 
 // src/index.js
-app.use("/api/v1/resultados", require("./versions/v1/routes/resultados"));
+app.use("/api/v1", resultadosRouter);
 
 
 // Starting server
