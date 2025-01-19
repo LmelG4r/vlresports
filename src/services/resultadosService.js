@@ -1,14 +1,13 @@
 const request = require("request-promise");
 const cheerio = require("cheerio");
+const overview = scrapeOverview(html);
+matchData.overview = overview;
 
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
 async function getMatchDetails(matchId) {
   // Función para extraer los datos específicos de cada pestaña (Overview, Performance, Economy)
-function scrapeTabData($, url) {
-  // Lógica para obtener la información desde cada URL específica.
-  return {}; // Retorna los datos relevantes
-}
+
 
 
 function scrapeOverview($) {
@@ -131,20 +130,13 @@ function scrapeOverview($) {
       ],
       format: format || "Formato no especificado",
       mapPicksBans: mapPicksBans || "Mapas no especificados",
-      overview: scrapeOverview,
+      overview,
       performance: {},
       economy: {},
       maps: [],
   };
   
-  // Obtener "Overview", "Performance", y "Economy"
-  html(".vm-stats-tabnav-item").each((i, el) => {
-      const tab = html(el).text().trim().toLowerCase();
-      if (["overview", "performance", "economy"].includes(tab)) {
-          const tabData = scrapeTabData(html, html(el).attr("data-href"));
-          matchData[tab] = tabData;
-      }
-  });
+
   
   // Extraer mapas jugados y su información
   html(".vm-stats-game").each((i, el) => {
