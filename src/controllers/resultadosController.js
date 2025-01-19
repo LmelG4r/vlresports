@@ -1,4 +1,4 @@
-const resultadosService = require('../services/resultadosService');
+const resultadosService = require("../services/resultadosService");
 
 const getMatchDetails = async (req, res) => {
   const { id } = req.params;
