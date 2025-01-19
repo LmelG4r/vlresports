@@ -8,8 +8,6 @@ const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 async function getMatchDetails(matchId) {
   // Función para extraer los datos específicos de cada pestaña (Overview, Performance, Economy)
 
-
-
 function scrapeOverview($) {
     const overviewData = [];
 
@@ -130,7 +128,7 @@ function scrapeOverview($) {
       ],
       format: format || "Formato no especificado",
       mapPicksBans: mapPicksBans || "Mapas no especificados",
-      overview,
+      overview: scrapeOverview($), 
       performance: {},
       economy: {},
       maps: [],
