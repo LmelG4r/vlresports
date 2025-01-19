@@ -25,7 +25,7 @@ app.use("/api/v1/results", require("./versions/v1/routes/results"));
 
 
 // src/index.js
-app.use('/api/v1/resultados', require('./versions/v1/routes/resultados'));
+app.use("/api/v1/resultados", require("./versions/v1/routes/resultados"));
 
 
 // Starting server
