@@ -48,3 +48,67 @@ async function getMatchDetails(matchId) {
 module.exports = {
   getMatchDetails,
 };
+
+async function scrapeMatchData(url) {
+  const { data: html } = await axios.get(url);
+  const $ = cheerio.load(html);
+
+  // Información principal
+  const matchData = {
+      matchId: "", // Ya lo tienes
+      tournament: "",
+      stage: "",
+      date: "",
+      teams: [],
+      format: "",
+      mapPicksBans: "",
+      overview: {}, // Sección de estadísticas generales
+      performance: {}, // Rendimiento
+      economy: {}, // Economía
+      maps: [] // Información de cada mapa jugado
+  };
+
+  // Obtener "Overview", "Performance", y "Economy"
+  $(".vm-stats-tabnav-item").each((i, el) => {
+      const tab = $(el).text().trim().toLowerCase();
+      if (["overview", "performance", "economy"].includes(tab)) {
+          const tabData = scrapeTabData($, $(el).attr("data-href")); // Función específica
+          matchData[tab] = tabData;
+      }
+  });
+
+  // Extraer mapas jugados y su información
+  $(".vm-stats-gamesnav-item").each((i, el) => {
+      const isPlayed = !$(el).hasClass("mod-disabled");
+      if (isPlayed) {
+          const mapName = $(el).find("div").text().trim();
+          const pickText = $(el)
+              .find(".pick")
+              .text()
+              .replace("Pick:", "")
+              .trim();
+          const mapInfo = {
+              mapName,
+              pickBy: pickText || null, // Quién hizo el pick, si está disponible
+              winner: $(el).find(".team-tag").text().trim(),
+              rounds: scrapeRounds($, $(el).attr("data-href")) // Detalles de rondas
+          };
+
+          matchData.maps.push(mapInfo);
+      }
+  });
+
+  return matchData;
+}
+
+// Función para extraer los datos específicos de cada pestaña (Overview, Performance, Economy)
+function scrapeTabData($, url) {
+  // Lógica para obtener la información desde cada URL específica.
+  return {}; // Retorna los datos relevantes
+}
+
+// Función para extraer rondas jugadas en cada mapa
+function scrapeRounds($, url) {
+  // Lógica para obtener las rondas desde cada URL específica del mapa.
+  return []; // Retorna las rondas con sus datos
+}
