@@ -1,11 +1,11 @@
 const request = require("request-promise");
 const cheerio = require("cheerio");
 
-const vlrgg_url = "https://www.vlr.gg";
+const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
 async function getMatchDetails(matchId) {
   try {
-    const matchUrl = `${vlrgg_url}/match/${matchId}`;
+    const matchUrl = `${vlrgg_url}/${matchId}`; // Construye la URL correcta
     console.log(`Scrapeando datos de: ${matchUrl}`);
 
     // Solicita la página y carga el HTML
