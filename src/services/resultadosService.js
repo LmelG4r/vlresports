@@ -80,6 +80,9 @@ function scrapeOverview(html) {
             },
         };
         
+        console.log("Stats obtenidas:", stats);
+        
+        
         // Agregar los datos del jugador al array de resultados
         overviewData.push({
             playerName,
