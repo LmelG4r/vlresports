@@ -43,7 +43,6 @@ async function getMatchDetails(matchId) {
   }
   
   module.exports = {
-    getMatches,
     getMatchDetails,  // Exportamos la nueva función
   };
   
