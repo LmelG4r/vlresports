@@ -93,20 +93,28 @@ function scrapeRounds($, url) {
         if (team1Win) {
             winningTeam = team1Name;
             result = "ct-win";
-            method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src") || "";
+            method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src");
         } else if (team2Win) {
             winningTeam = team2Name;
             result = "t-win";
-            method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src") || "";
+            method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src");
         }
 
-        // Reemplazar URL del método con su correspondiente nombre
-        if (method.includes("elim.webp")) {
-            method = "elim";
-        } else if (method.includes("defuse.webp")) {
-            method = "defuse";
-        } else if (method.includes("boom.webp")) {
-            method = "boom";
+        // Manejo de URL relativas
+        if (method) {
+            if (method.startsWith("/")) {
+                method = "https://www.vlr.gg" + method;  // Añadimos la base de la URL
+            }
+            
+            if (method.includes("elim.webp")) {
+                method = "elim";
+            } else if (method.includes("defuse.webp")) {
+                method = "defuse";
+            } else if (method.includes("boom.webp")) {
+                method = "boom";
+            } else {
+                method = "unknown";
+            }
         } else {
             method = "unknown";
         }
@@ -139,6 +147,7 @@ function scrapeRounds($, url) {
 
     matchData.maps.push(mapInfo);
 });
+
 
   
   return matchData;
