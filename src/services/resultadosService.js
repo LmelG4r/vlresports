@@ -39,9 +39,9 @@ function scrapeOverview(html) {
                 defend: playerRow.find(".mod-vlr-kills .mod-side.mod-ct").text().trim() || "0",
             },
             deaths: {
-                both: playerRow.find(".mod-vlr-deaths .mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-vlr-deaths .mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-vlr-deaths .mod-side.mod-ct").text().trim() || "0",
+                both: playerRow.find(".mod-vlr-deaths .mod-both").text().trim() || "0",
+                attack: playerRow.find(".mod-vlr-deaths .mod-t").text().trim() || "0",
+                defend: playerRow.find(".mod-vlr-deaths .mod-ct").text().trim() || "0",
             },
             assists: {
                 both: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-both").text().trim() || "0",
@@ -54,9 +54,9 @@ function scrapeOverview(html) {
                 defend: playerRow.find(".mod-stat").eq(3).find(".mod-side.mod-ct").text().trim() || "0",
             },
             kast: {
-                both: playerRow.find(".mod-stat").eq(4).find(".mod-side.mod-both").text().trim() || "0%",
-                attack: playerRow.find(".mod-stat").eq(4).find(".mod-side.mod-t").text().trim() || "0%",
-                defend: playerRow.find(".mod-stat").eq(4).find(".mod-side.mod-ct").text().trim() || "0%",
+                both: playerRow.find(".mod-stat").eq(4).find(".mod-both").text().trim() || "0%",
+                attack: playerRow.find(".mod-stat").eq(4).find(".mod-t").text().trim() || "0%",
+                defend: playerRow.find(".mod-stat").eq(4).find(".mod-ct").text().trim() || "0%",
             },
             adr: {
                 both: playerRow.find(".mod-stat").eq(5).find(".mod-side.mod-both").text().trim() || "0",
