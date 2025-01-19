@@ -48,7 +48,7 @@ function scrapeOverview(html) {
                 attack: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-ct").text().trim() || "0",
             },
-            plusMinus: {
+            KillsDeaths: {
                 both: playerRow.find(".mod-kd-diff .mod-both").text().trim() || "0",  // Buscar el valor para "both"
                 attack: playerRow.find(".mod-kd-diff .mod-t").text().trim() || "0",     // Buscar el valor para "attack"
                 defend: playerRow.find(".mod-kd-diff .mod-ct").text().trim() || "0",    // Buscar el valor para "defend"
@@ -80,9 +80,7 @@ function scrapeOverview(html) {
                 defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
             },
         };
-        
-        console.log("Stats obtenidas:", stats);
-        
+                
         
         // Agregar los datos del jugador al array de resultados
         overviewData.push({
