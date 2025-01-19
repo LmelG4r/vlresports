@@ -12,7 +12,7 @@ function scrapeOverview(html) {
 
     // Recorremos cada fila de la tabla (tbody > tr)
     html(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
-        const playerRow = $(el);
+        const playerRow = html(el);
 
         // Extraer información del jugador y su equipo
         const playerName = playerRow.find(".mod-player .text-of").text().trim() || "Jugador no especificado";
