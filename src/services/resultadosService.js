@@ -1,7 +1,6 @@
 const request = require("request-promise");
 const cheerio = require("cheerio");
-const overview = scrapeOverview(html);
-matchData.overview = overview;
+
 
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
