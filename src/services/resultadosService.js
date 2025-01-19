@@ -68,7 +68,9 @@ function scrapeRounds($, url) {
   
   // Extraer mapas jugados y su información
   html(".vm-stats-game").each((i, el) => {
-    const mapName = html(el).find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
+    const mapNameRaw = html(el).find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
+    const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+
     const duration = html(el).find(".vm-stats-game-header .map-duration").text().trim();
 
     const team1Name = html(el).find(".vm-stats-game-header .team .team-name").eq(0).text().trim();
@@ -89,6 +91,26 @@ function scrapeRounds($, url) {
         ot: html(el).find(".vm-stats-game-header .team .mod-ot").eq(1).text().trim() || "0",
     };
 
+    // Escalado de las rondas
+    const rounds = [];
+    html(el).find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
+        const roundNumber = html(roundEl).find(".rnd-num").text().trim();
+        const team1Result = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win") ? {
+            result: html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-t") ? "t-win" : "ct-win",
+            method: html(roundEl).find(".rnd-sq img").attr("src") || "unknown",
+        } : null;
+        const team2Result = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win") ? {
+            result: html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-t") ? "t-win" : "ct-win",
+            method: html(roundEl).find(".rnd-sq img").attr("src") || "unknown",
+        } : null;
+
+        rounds.push({
+            roundNumber: parseInt(roundNumber, 10) || j + 1,
+            team1Result,
+            team2Result,
+        });
+    });
+
     const mapInfo = {
         mapName: mapName || "Mapa no especificado",
         duration: duration || "Duración no especificada",
@@ -104,10 +126,13 @@ function scrapeRounds($, url) {
                 rounds: team2Rounds,
             },
         ],
+        rounds, // Añadimos los detalles de las rondas aquí
     };
 
     matchData.maps.push(mapInfo);
 });
+
+
 
   
   return matchData;
