@@ -7,11 +7,11 @@ const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 async function getMatchDetails(matchId) {
   // Función para extraer los datos específicos de cada pestaña (Overview, Performance, Economy)
 
-function scrapeOverview($) {
+function scrapeOverview(html) {
     const overviewData = [];
 
     // Recorremos cada fila de la tabla (tbody > tr)
-    $(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
+    html(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
         const playerRow = $(el);
 
         // Extraer información del jugador y su equipo
@@ -127,7 +127,7 @@ function scrapeOverview($) {
       ],
       format: format || "Formato no especificado",
       mapPicksBans: mapPicksBans || "Mapas no especificados",
-      overview: scrapeOverview($), 
+      overview: scrapeOverview(html), 
       performance: {},
       economy: {},
       maps: [],
