@@ -79,36 +79,46 @@ function scrapeRounds($, url) {
     const team1Score = html(el).find(".vm-stats-game-header .team .score").eq(0).text().trim();
     const team2Score = html(el).find(".vm-stats-game-header .team .score").eq(1).text().trim();
 
-    const team1Rounds = {
-        ct: html(el).find(".vm-stats-game-header .team .mod-ct").eq(0).text().trim() || "0",
-        t: html(el).find(".vm-stats-game-header .team .mod-t").eq(0).text().trim() || "0",
-        ot: html(el).find(".vm-stats-game-header .team .mod-ot").eq(0).text().trim() || "0",
-    };
-
-    const team2Rounds = {
-        ct: html(el).find(".vm-stats-game-header .team .mod-ct").eq(1).text().trim() || "0",
-        t: html(el).find(".vm-stats-game-header .team .mod-t").eq(1).text().trim() || "0",
-        ot: html(el).find(".vm-stats-game-header .team .mod-ot").eq(1).text().trim() || "0",
-    };
-
-    // Escalado de las rondas
     const rounds = [];
     html(el).find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
-        const roundNumber = html(roundEl).find(".rnd-num").text().trim();
-        const team1Result = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win") ? {
-            result: html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-t") ? "t-win" : "ct-win",
-            method: html(roundEl).find(".rnd-sq img").attr("src") || "unknown",
-        } : null;
-        const team2Result = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win") ? {
-            result: html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-t") ? "t-win" : "ct-win",
-            method: html(roundEl).find(".rnd-sq img").attr("src") || "unknown",
-        } : null;
+        const roundNumber = parseInt(html(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
 
-        rounds.push({
-            roundNumber: parseInt(roundNumber, 10) || j + 1,
-            team1Result,
-            team2Result,
-        });
+        let winningTeam = null;
+        let result = null;
+        let method = null;
+
+        const team1Win = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win");
+        const team2Win = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win");
+
+        if (team1Win) {
+            winningTeam = team1Name;
+            result = "ct-win";
+            method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src") || "";
+        } else if (team2Win) {
+            winningTeam = team2Name;
+            result = "t-win";
+            method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src") || "";
+        }
+
+        // Reemplazar URL del método con su correspondiente nombre
+        if (method.includes("elim.webp")) {
+            method = "elim";
+        } else if (method.includes("defuse.webp")) {
+            method = "defuse";
+        } else if (method.includes("boom.webp")) {
+            method = "boom";
+        } else {
+            method = "unknown";
+        }
+
+        // Solo agregar si hay un resultado
+        if (result) {
+            rounds.push({
+                roundNumber,
+                result: `${result} (${winningTeam})`,
+                method,
+            });
+        }
     });
 
     const mapInfo = {
@@ -118,21 +128,17 @@ function scrapeRounds($, url) {
             {
                 name: team1Name || "Equipo 1 no especificado",
                 score: team1Score || "0",
-                rounds: team1Rounds,
             },
             {
                 name: team2Name || "Equipo 2 no especificado",
                 score: team2Score || "0",
-                rounds: team2Rounds,
             },
         ],
-        rounds, // Añadimos los detalles de las rondas aquí
+        rounds, // Rondas escaladas correctamente
     };
 
     matchData.maps.push(mapInfo);
 });
-
-
 
   
   return matchData;
