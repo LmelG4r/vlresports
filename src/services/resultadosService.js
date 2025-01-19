@@ -49,10 +49,11 @@ function scrapeOverview(html) {
                 defend: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-ct").text().trim() || "0",
             },
             plusMinus: {
-                both: playerRow.find(".mod-stat").eq(3).find(".mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(3).find(".mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(3).find(".mod-side.mod-ct").text().trim() || "0",
+                both: playerRow.find(".mod-kd-diff .mod-both").text().trim() || "0",  // Buscar el valor para "both"
+                attack: playerRow.find(".mod-kd-diff .mod-t").text().trim() || "0",     // Buscar el valor para "attack"
+                defend: playerRow.find(".mod-kd-diff .mod-ct").text().trim() || "0",    // Buscar el valor para "defend"
             },
+            
             kast: {
                 both: playerRow.find(".mod-stat").eq(4).find(".mod-both").text().trim() || "0%",
                 attack: playerRow.find(".mod-stat").eq(4).find(".mod-t").text().trim() || "0%",
