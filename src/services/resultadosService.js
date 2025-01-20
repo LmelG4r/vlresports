@@ -142,9 +142,37 @@ async function scrapeMatchDetails(matchId) {
                     name: mapContext.find(".team-name").eq(1).text().trim() || "Equipo 2 no especificado",
                     score: mapContext.find(".score").eq(1).text().trim() || "0",
                 },
-            ];
-
-            matchData.maps.push({ mapName, duration, teams });
+            ];const rounds = [];
+            mapContext.find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
+                const roundNumber = parseInt(html(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
+        
+                let winningTeam = null;
+                let result = null;
+                let method = null;
+        
+                const team1Win = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win");
+                const team2Win = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win");
+        
+                if (team1Win) {
+                    winningTeam = teams[0].name;
+                    result = "ct-win";
+                    method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src");
+                } else if (team2Win) {
+                    winningTeam = teams[1].name;
+                    result = "t-win";
+                    method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src");
+                }
+        
+                rounds.push({
+                    roundNumber,
+                    winner: winningTeam,
+                    result: result,
+                    method: method || "no-time",
+                });
+            });
+        
+            // Agregar la información del mapa y las rondas al matchData
+            matchData.maps.push({ mapName, duration, teams, rounds });
         });
 
         return matchData;
