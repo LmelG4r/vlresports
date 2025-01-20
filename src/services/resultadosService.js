@@ -9,6 +9,7 @@ async function getMatchDetails(matchId) {
 
 function scrapeOverview(html) {
     const overviewData = [];
+    let mapContext = {}; // Inicialización vacía
 
     // Recorremos cada fila de la tabla (tbody > tr)
     mapContext.find(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
