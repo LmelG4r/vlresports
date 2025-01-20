@@ -117,7 +117,7 @@ function scrapeOverview(html) {
   
       // Procesar los datos de cada mapa
       html(".vm-stats-game").each((i, el) => {
-        const mapElement = cheerio(el);
+        const mapElement = cheerioLoad(el);
         const mapNameRaw = mapElement.find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
         const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
   
