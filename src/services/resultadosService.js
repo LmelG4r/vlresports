@@ -132,7 +132,8 @@ async function getMatchDetails(matchId) {
 
   
   // Extraer mapas jugados y su información
-  html(".vm-stats-game").each((i, el) => {
+  const mapData = [];
+  html(".vm-stats-game").each((_, element) =>{
     const mapNameRaw = html(el).find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
     const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
 
