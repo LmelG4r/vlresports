@@ -110,6 +110,10 @@ try {
     const team2Name = html(".match-header-link.mod-2 .wf-title-med").text().trim();
     const team1Score = html(".match-header-vs-score .match-header-vs-score-loser").text().trim();
     const team2Score = html(".match-header-vs-score .match-header-vs-score-winner").text().trim();
+
+    const format = html(".match-header-vs-note").eq(1).text().trim(); // Segundo elemento con la clase
+    const mapPicksBans = html(".match-header-note").text().trim();
+    
     // Devuelve los detalles como un objeto
     const matchData = {
       matchId,
