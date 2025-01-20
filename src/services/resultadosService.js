@@ -10,7 +10,7 @@ async function getMatchDetails(matchId) {
 function scrapeOverview(html) {
     const overviewData = [];
     html(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
-        const playerRow = $(el);  // Convertir a jQuery
+        const playerRow = html(el);  // Convertir a jQuery
       
         // Extraer información del jugador y su equipo
         const playerName = playerRow.find(".mod-player .text-of").text().trim() || "Jugador no especificado";
