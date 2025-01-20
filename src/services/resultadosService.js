@@ -134,12 +134,12 @@ try {
   
   // Extraer mapas jugados y su información
   html(".vm-stats-game").each((_, el) => {
-    const mapContext = html(el);
-
+    const mapContext = html(el); // Asegúrate de que mapContext esté definida dentro de cada iteración
+  
     const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
     const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
     const duration = mapContext.find(".map-duration").text().trim();
-
+  
     const teams = [
         {
           name: mapContext.find(".team-name").eq(0).text().trim() || "Equipo 1 no especificado",
@@ -150,83 +150,65 @@ try {
           score: mapContext.find(".score").eq(1).text().trim() || "0",
         },
       ];
-
-      const rounds = [];
-      html(el).find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
-          const roundNumber = parseInt(html(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
-      
-          let winningTeam = null;
-          let result = null;
-          let method = null;
-      
-          const team1Win = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win");
-          const team2Win = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win");
-      
-          if (team1Win) {
-              winningTeam = team1Name;
-              result = "ct-win";
-              method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src");
-          } else if (team2Win) {
-              winningTeam = team2Name;
-              result = "t-win";
-              method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src");
-          }
-      
-          // Manejo de URL relativas
-          if (method) {
-              if (method.startsWith("/")) {
-                  method = "https://www.vlr.gg" + method; // Añadimos la base de la URL
-              }
-      
-              if (method.includes("elim.webp")) {
-                  method = "elim";
-              } else if (method.includes("defuse.webp")) {
-                  method = "defuse";
-              } else if (method.includes("boom.webp")) {
-                  method = "boom";
-              } else {
-                  method = "unknown";
-              }
-          } else {
-              method = "unknown";
-          }
-      
-          // Solo agregar si hay un resultado
-          if (result) {
-              rounds.push({
-                  roundNumber,
-                  result: `${result} (${winningTeam})`, // Corrección de interpolación
-                  method,
-              });
-          }
-      });
-      
-
-    const mapInfo = {
-        mapName: mapName || "Mapa no especificado",
-        duration: duration || "Duración no especificada",
-        teams: [
-            {
-                name: team1Name || "Equipo 1 no especificado",
-                score: team1Score || "0",
-            },
-            {
-                name: team2Name || "Equipo 2 no especificado",
-                score: team2Score || "0",
-            },
-        ],
-        rounds, // Rondas escaladas correctamente
-    };
+  
+    const rounds = [];
+    html(el).find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
+        const roundNumber = parseInt(html(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
+    
+        let winningTeam = null;
+        let result = null;
+        let method = null;
+    
+        const team1Win = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win");
+        const team2Win = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win");
+    
+        if (team1Win) {
+            winningTeam = team1Name;
+            result = "ct-win";
+            method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src");
+        } else if (team2Win) {
+            winningTeam = team2Name;
+            result = "t-win";
+            method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src");
+        }
+    
+        // Manejo de URL relativas
+        if (method) {
+            if (method.startsWith("/")) {
+                method = "https://www.vlr.gg" + method; // Añadimos la base de la URL
+            }
+    
+            if (method.includes("elim.webp")) {
+                method = "elim";
+            } else if (method.includes("defuse.webp")) {
+                method = "defuse";
+            } else if (method.includes("boom.webp")) {
+                method = "boom";
+            } else {
+                method = "unknown";
+            }
+        } else {
+            method = "unknown";
+        }
+    
+        // Solo agregar si hay un resultado
+        if (result) {
+            rounds.push({
+                roundNumber,
+                result: `${result} (${winningTeam})`, // Corrección de interpolación
+                method,
+            });
+        }
+    });
+  
 
     matchData.maps.push({
-        mapName,
-        duration,
+        mapName: mapName || "Mapa no especificado",
+        duration: duration || "Duración no especificada",
         teams,
-        overview,
+        rounds,
       });
-   
-
-});
+    });
 
 
   
