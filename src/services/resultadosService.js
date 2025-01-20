@@ -189,4 +189,3 @@ async function getMatchDetails(matchId) {
     return null;
   }
 }
-
