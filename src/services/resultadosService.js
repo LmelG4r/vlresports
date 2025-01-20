@@ -190,5 +190,3 @@ async function getMatchDetails(matchId) {
   }
 }
 
-// Ejemplo de cómo llamar a la función
-getMatchDetails("1234").then(console.log);
