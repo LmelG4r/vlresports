@@ -9,92 +9,87 @@ async function getMatchDetails(matchId) {
 
 function scrapeOverview(html) {
     const overviewData = [];
-    let mapContext = {}; // Inicialización vacía
-
-    // Recorremos cada fila de la tabla (tbody > tr)
-    mapContext.find(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
-        const playerRow = html(el);
-
+    html(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
+        const playerRow = $(el);  // Convertir a jQuery
+      
         // Extraer información del jugador y su equipo
         const playerName = playerRow.find(".mod-player .text-of").text().trim() || "Jugador no especificado";
         const teamName = playerRow.find(".mod-player .ge-text-light").text().trim() || "Equipo no especificado";
-
+      
         // Extraer el agente (atributo "title" del <img>)
         const agent = playerRow.find(".mod-agents img").attr("title") || "Agente no especificado";
-
+      
         // Extraer estadísticas
         const stats = {
-            rating: {
-                both: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-ct").text().trim() || "0",
-            },
-            acs: {
-                both: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-ct").text().trim() || "0",
-            },
-            kills: {
-                both: playerRow.find(".mod-vlr-kills .mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-vlr-kills .mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-vlr-kills .mod-side.mod-ct").text().trim() || "0",
-            },
-            deaths: {
-                both: playerRow.find(".mod-vlr-deaths .mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-vlr-deaths .mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-vlr-deaths .mod-ct").text().trim() || "0",
-            },
-            assists: {
-                both: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-ct").text().trim() || "0",
-            },
-            KillsDeaths: {
-                both: playerRow.find(".mod-kd-diff .mod-both").text().trim() || "0",  // Buscar el valor para "both"
-                attack: playerRow.find(".mod-kd-diff .mod-t").text().trim() || "0",     // Buscar el valor para "attack"
-                defend: playerRow.find(".mod-kd-diff .mod-ct").text().trim() || "0",    // Buscar el valor para "defend"
-            },
-            
-            kast: {
-                both: playerRow.find(".mod-stat").eq(4).find(".mod-both").text().trim() || "0%",
-                attack: playerRow.find(".mod-stat").eq(4).find(".mod-t").text().trim() || "0%",
-                defend: playerRow.find(".mod-stat").eq(4).find(".mod-ct").text().trim() || "0%",
-            },
-            adr: {
-                both: playerRow.find(".mod-stat").eq(5).find(".mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(5).find(".mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(5).find(".mod-ct").text().trim() || "0",
-            },
-            hs: {
-                both: playerRow.find(".mod-stat").eq(6).find(".mod-both").text().trim() || "0%",
-                attack: playerRow.find(".mod-stat").eq(6).find(".mod-t").text().trim() || "0%",
-                defend: playerRow.find(".mod-stat").eq(6).find(".mod-ct").text().trim() || "0%",
-            },
-            fk: {
-                both: playerRow.find(".mod-stat").eq(7).find(".mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(7).find(".mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(7).find(".mod-ct").text().trim() || "0",
-            },
-            fd: {
-                both: playerRow.find(".mod-stat").eq(8).find(".mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(8).find(".mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
-            },
+          rating: {
+            both: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-both").text().trim() || "0",
+            attack: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-t").text().trim() || "0",
+            defend: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-ct").text().trim() || "0",
+          },
+          acs: {
+            both: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-both").text().trim() || "0",
+            attack: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-t").text().trim() || "0",
+            defend: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-ct").text().trim() || "0",
+          },
+          kills: {
+            both: playerRow.find(".mod-vlr-kills .mod-side.mod-both").text().trim() || "0",
+            attack: playerRow.find(".mod-vlr-kills .mod-side.mod-t").text().trim() || "0",
+            defend: playerRow.find(".mod-vlr-kills .mod-side.mod-ct").text().trim() || "0",
+          },
+          deaths: {
+            both: playerRow.find(".mod-vlr-deaths .mod-both").text().trim() || "0",
+            attack: playerRow.find(".mod-vlr-deaths .mod-t").text().trim() || "0",
+            defend: playerRow.find(".mod-vlr-deaths .mod-ct").text().trim() || "0",
+          },
+          assists: {
+            both: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-both").text().trim() || "0",
+            attack: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-t").text().trim() || "0",
+            defend: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-ct").text().trim() || "0",
+          },
+          KillsDeaths: {
+            both: playerRow.find(".mod-kd-diff .mod-both").text().trim() || "0",
+            attack: playerRow.find(".mod-kd-diff .mod-t").text().trim() || "0",
+            defend: playerRow.find(".mod-kd-diff .mod-ct").text().trim() || "0",
+          },
+          kast: {
+            both: playerRow.find(".mod-stat").eq(4).find(".mod-both").text().trim() || "0%",
+            attack: playerRow.find(".mod-stat").eq(4).find(".mod-t").text().trim() || "0%",
+            defend: playerRow.find(".mod-stat").eq(4).find(".mod-ct").text().trim() || "0%",
+          },
+          adr: {
+            both: playerRow.find(".mod-stat").eq(5).find(".mod-both").text().trim() || "0",
+            attack: playerRow.find(".mod-stat").eq(5).find(".mod-t").text().trim() || "0",
+            defend: playerRow.find(".mod-stat").eq(5).find(".mod-ct").text().trim() || "0",
+          },
+          hs: {
+            both: playerRow.find(".mod-stat").eq(6).find(".mod-both").text().trim() || "0%",
+            attack: playerRow.find(".mod-stat").eq(6).find(".mod-t").text().trim() || "0%",
+            defend: playerRow.find(".mod-stat").eq(6).find(".mod-ct").text().trim() || "0%",
+          },
+          fk: {
+            both: playerRow.find(".mod-stat").eq(7).find(".mod-both").text().trim() || "0",
+            attack: playerRow.find(".mod-stat").eq(7).find(".mod-t").text().trim() || "0",
+            defend: playerRow.find(".mod-stat").eq(7).find(".mod-ct").text().trim() || "0",
+          },
+          fd: {
+            both: playerRow.find(".mod-stat").eq(8).find(".mod-both").text().trim() || "0",
+            attack: playerRow.find(".mod-stat").eq(8).find(".mod-t").text().trim() || "0",
+            defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
+          },
         };
-                
-        
+      
         // Agregar los datos del jugador al array de resultados
         overviewData.push({
-            playerName,
-            teamName,
-            agent,
-            stats,
+          playerName,
+          teamName,
+          agent,
+          stats,
         });
-    });
-
-    return overviewData;
-}
-
+      });
+      
+      return overviewData;
+      
+    }
 try {
     const matchUrl = `${vlrgg_url}/${matchId}`;
     console.log(`Scrapeando datos de: ${matchUrl}`);
