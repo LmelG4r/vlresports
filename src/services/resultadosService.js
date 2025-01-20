@@ -102,7 +102,14 @@ try {
       uri: matchUrl,
       transform: (body) => cheerio.load(body),
     });
+    const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
+    const stage = html(".match-header-event-series").text().trim();
+    const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
 
+    const team1Name = html(".match-header-link.mod-1 .wf-title-med").text().trim();
+    const team2Name = html(".match-header-link.mod-2 .wf-title-med").text().trim();
+    const team1Score = html(".match-header-vs-score .match-header-vs-score-loser").text().trim();
+    const team2Score = html(".match-header-vs-score .match-header-vs-score-winner").text().trim();
     // Devuelve los detalles como un objeto
     const matchData = {
       matchId,
