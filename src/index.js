@@ -1,7 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
 let cors = require("cors");
-const resultadosRouter = require("./versions/v1/routes/resultados");
+const resultadosRouter = require("./versions/v1/routes/resultados"); // Importamos la nueva ruta de resultados
 const app = express();
 
 // Settings
@@ -14,19 +14,16 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 // Routes
-app.use(require("./versions/v1/routes/index"));
-app.use("/api", require("./versions/v1/routes/index"));
-// - Version 1
+// - Usamos la ruta de la versión 1 de la API
+app.use("/api/v1", require("./versions/v1/routes/index"));
+
+// Rutas específicas de la API
 app.use("/api/v1/teams", require("./versions/v1/routes/teams"));
 app.use("/api/v1/players", require("./versions/v1/routes/players"));
 app.use("/api/v1/events", require("./versions/v1/routes/events"));
 app.use("/api/v1/matches", require("./versions/v1/routes/matches"));
-app.use("/api/v1/results", require("./versions/v1/routes/results"));
-
-
-// src/index.js
-app.use("/api/v1", resultadosRouter);
-
+// Aquí estamos usando la ruta correcta para resultados
+app.use("/api/v1/results", resultadosRouter);
 
 // Starting server
 app.listen(app.get("port"), () => {

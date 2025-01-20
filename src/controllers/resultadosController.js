@@ -1,4 +1,5 @@
-const { getMatchDetails } = require("../services/resultadosService");
+// Importamos la nueva función scrapeMatchDetails
+const { scrapeMatchDetails } = require("../services/resultadosService");
 
 // Controlador para obtener detalles de un partido
 const getMatchDetailsController = async (req, res) => {
@@ -6,8 +7,8 @@ const getMatchDetailsController = async (req, res) => {
   console.log(`Buscando detalles para el match con ID: ${matchId}`);
 
   try {
-    // Llama al servicio para obtener los detalles del partido
-    const matchDetails = await getMatchDetails(matchId);
+    // Llamamos a la función para obtener los detalles del partido
+    const matchDetails = await scrapeMatchDetails(matchId);
 
     if (!matchDetails) {
       return res.status(404).json({ message: `No se encontró el match con ID ${matchId}` });
@@ -21,4 +22,3 @@ const getMatchDetailsController = async (req, res) => {
 };
 
 module.exports = { getMatchDetailsController };
-
