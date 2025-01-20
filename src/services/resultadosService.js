@@ -5,10 +5,44 @@ const cheerioLoad = cheerio.load; // Configuración correcta del método 'load'
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
 async function getMatchDetails(matchId) {
-function scrapeOverview(html) {
-    const overviewData = [];
 
-    cheerioLoad(".wf-table-inset.mod-overview tbody tr", mapElement).each((_, el) => {
+
+    try {
+    const matchUrl = `${vlrgg_url}/${matchId}`;
+    console.log(`Scrapeando datos de: ${matchUrl}`);
+
+    const html = await request({
+      uri: matchUrl,
+      transform: (body) => cheerioLoad(body),
+    });
+
+    const matchData = {
+        matchId,
+        tournament: html(".match-header-event div[style='font-weight: 700;']").text().trim() || "Torneo no especificado",
+        stage: html(".match-header-event-series").text().trim() || "Etapa no especificada",
+        date: html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim() || "Fecha no especificada",
+        teams: [
+          { name: html(".match-header-link.mod-1 .wf-title-med").text().trim() || "Equipo 1 no especificado" },
+          { name: html(".match-header-link.mod-2 .wf-title-med").text().trim() || "Equipo 2 no especificado" },
+        ],
+        format: html(".match-header-vs-note").eq(1).text().trim() || "Formato no especificado",
+        mapPicksBans: html(".match-header-note").text().trim() || "Mapas no especificados",
+        maps: [], // Información específica por mapa
+      };
+  
+      // Procesar los datos de cada mapa
+      html(".vm-stats-game").each((i, el) => {
+        const mapElement = cheerioLoad(el);
+        const mapNameRaw = mapElement.find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
+        const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+  
+        const duration = mapElement.find(".vm-stats-game-header .map-duration").text().trim();
+        const team1Name = mapElement.find(".vm-stats-game-header .team .team-name").eq(0).text().trim();
+        const team2Name = mapElement.find(".vm-stats-game-header .team .team-name").eq(1).text().trim();
+        const team1Score = mapElement.find(".vm-stats-game-header .team .score").eq(0).text().trim();
+        const team2Score = mapElement.find(".vm-stats-game-header .team .score").eq(1).text().trim();
+  
+        // Scrapeamos el overview específico del mapa
         const playerRow = cheerioLoad(el);
   
         // Extraer información del jugador y su equipo
@@ -78,57 +112,8 @@ function scrapeOverview(html) {
                 defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
             },
         };
-                
-        
-        // Agregar los datos del jugador al array de resultados
-        overviewData.push({
-            playerName,
-            teamName,
-            agent,
-            stats,
-        });
-    });
 
-    return overviewData;
-}
-
-    try {
-    const matchUrl = `${vlrgg_url}/${matchId}`;
-    console.log(`Scrapeando datos de: ${matchUrl}`);
-
-    const html = await request({
-      uri: matchUrl,
-      transform: (body) => cheerioLoad(body),
-    });
-
-    const matchData = {
-        matchId,
-        tournament: html(".match-header-event div[style='font-weight: 700;']").text().trim() || "Torneo no especificado",
-        stage: html(".match-header-event-series").text().trim() || "Etapa no especificada",
-        date: html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim() || "Fecha no especificada",
-        teams: [
-          { name: html(".match-header-link.mod-1 .wf-title-med").text().trim() || "Equipo 1 no especificado" },
-          { name: html(".match-header-link.mod-2 .wf-title-med").text().trim() || "Equipo 2 no especificado" },
-        ],
-        format: html(".match-header-vs-note").eq(1).text().trim() || "Formato no especificado",
-        mapPicksBans: html(".match-header-note").text().trim() || "Mapas no especificados",
-        maps: [], // Información específica por mapa
-      };
-  
-      // Procesar los datos de cada mapa
-      html(".vm-stats-game").each((i, el) => {
-        const mapElement = cheerioLoad(el);
-        const mapNameRaw = mapElement.find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
-        const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
-  
-        const duration = mapElement.find(".vm-stats-game-header .map-duration").text().trim();
-        const team1Name = mapElement.find(".vm-stats-game-header .team .team-name").eq(0).text().trim();
-        const team2Name = mapElement.find(".vm-stats-game-header .team .team-name").eq(1).text().trim();
-        const team1Score = mapElement.find(".vm-stats-game-header .team .score").eq(0).text().trim();
-        const team2Score = mapElement.find(".vm-stats-game-header .team .score").eq(1).text().trim();
-  
-        // Scrapeamos el overview específico del mapa
-        const overview = scrapeOverview(html, mapElement);
+        overview.push({ playerName, teamName, agent, stats });
 
         
     // Devuelve los detalles como un objeto
@@ -225,7 +210,14 @@ function scrapeOverview(html) {
         rounds, // Rondas escaladas correctamente
     };
 
-    matchData.maps.push(mapInfo);
+    mapData.push({
+        mapName,
+        mapDuration,
+        team1: { name: team1, score: team1Score },
+        team2: { name: team2, score: team2Score },
+        rounds,
+        overview,
+    });
 });
 
 
