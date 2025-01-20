@@ -5,21 +5,19 @@ const cheerio = require("cheerio");
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
 async function getMatchDetails(matchId) {
-  // Función para extraer los datos específicos de cada pestaña (Overview, Performance, Economy)
-
 function scrapeOverview(html) {
     const overviewData = [];
 
-    // Recorremos cada fila de la tabla (tbody > tr)
-    html(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
-        const playerRow = html(el);
-
+    cheerio(".wf-table-inset.mod-overview tbody tr", mapElement).each((_, el) => {
+        const playerRow = cheerio(el);
+  
         // Extraer información del jugador y su equipo
         const playerName = playerRow.find(".mod-player .text-of").text().trim() || "Jugador no especificado";
         const teamName = playerRow.find(".mod-player .ge-text-light").text().trim() || "Equipo no especificado";
-
+  
         // Extraer el agente (atributo "title" del <img>)
         const agent = playerRow.find(".mod-agents img").attr("title") || "Agente no especificado";
+  
 
         // Extraer estadísticas
         const stats = {
@@ -94,46 +92,57 @@ function scrapeOverview(html) {
     return overviewData;
 }
 
-  try {
-    const matchUrl = `${vlrgg_url}/${matchId}`; // Construye la URL correcta
+    try {
+    const matchUrl = `${vlrgg_url}/${matchId}`;
     console.log(`Scrapeando datos de: ${matchUrl}`);
 
-    // Solicita la página y carga el HTML
     const html = await request({
       uri: matchUrl,
       transform: (body) => cheerio.load(body),
     });
 
-    // Ajusta los selectores basándote en la estructura actual
-    const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
-    const stage = html(".match-header-event-series").text().trim();
-    const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
-
-    const team1Name = html(".match-header-link.mod-1 .wf-title-med").text().trim();
-    const team2Name = html(".match-header-link.mod-2 .wf-title-med").text().trim();
-    const team1Score = html(".match-header-vs-score .match-header-vs-score-loser").text().trim();
-    const team2Score = html(".match-header-vs-score .match-header-vs-score-winner").text().trim();
-
-    const format = html(".match-header-vs-note").eq(1).text().trim(); // Segundo elemento con la clase
-    const mapPicksBans = html(".match-header-note").text().trim();
-
-    // Devuelve los detalles como un objeto
     const matchData = {
-      matchId,
-      tournament: tournament || "Torneo no especificado",
-      stage: stage || "Etapa no especificada",
-      date: date || "Fecha no especificada",
-      teams: [
+        matchId,
+        tournament: html(".match-header-event div[style='font-weight: 700;']").text().trim() || "Torneo no especificado",
+        stage: html(".match-header-event-series").text().trim() || "Etapa no especificada",
+        date: html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim() || "Fecha no especificada",
+        teams: [
+          { name: html(".match-header-link.mod-1 .wf-title-med").text().trim() || "Equipo 1 no especificado" },
+          { name: html(".match-header-link.mod-2 .wf-title-med").text().trim() || "Equipo 2 no especificado" },
+        ],
+        format: html(".match-header-vs-note").eq(1).text().trim() || "Formato no especificado",
+        mapPicksBans: html(".match-header-note").text().trim() || "Mapas no especificados",
+        maps: [], // Información específica por mapa
+      };
+  
+      // Procesar los datos de cada mapa
+      html(".vm-stats-game").each((i, el) => {
+        const mapElement = cheerio(el);
+        const mapNameRaw = mapElement.find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
+        const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+  
+        const duration = mapElement.find(".vm-stats-game-header .map-duration").text().trim();
+        const team1Name = mapElement.find(".vm-stats-game-header .team .team-name").eq(0).text().trim();
+        const team2Name = mapElement.find(".vm-stats-game-header .team .team-name").eq(1).text().trim();
+        const team1Score = mapElement.find(".vm-stats-game-header .team .score").eq(0).text().trim();
+        const team2Score = mapElement.find(".vm-stats-game-header .team .score").eq(1).text().trim();
+  
+        // Scrapeamos el overview específico del mapa
+        const overview = scrapeOverview(html, mapElement);
+
+        
+    // Devuelve los detalles como un objeto
+    matchData.maps.push({
+        mapName: mapName || "Mapa no especificado",
+        duration: duration || "Duración no especificada",
+        teams: [
           { name: team1Name || "Equipo 1 no especificado", score: team1Score || "0" },
           { name: team2Name || "Equipo 2 no especificado", score: team2Score || "0" },
-      ],
-      format: format || "Formato no especificado",
-      mapPicksBans: mapPicksBans || "Mapas no especificados",
-      overview: scrapeOverview(html), 
-      performance: {},
-      economy: {},
-      maps: [],
-  };
+        ],
+        overview, // Información del overview específica del mapa
+        rounds: [], // Puedes completar esto como en tu código actual
+      });
+    });
   
 
   
