@@ -152,3 +152,4 @@ async function scrapeMatchDetails(matchId) {
         console.error("Error al extraer datos del partido:", error);
     }
 }
+module.exports = { scrapeMatchDetails };
