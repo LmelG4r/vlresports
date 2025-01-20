@@ -96,7 +96,7 @@ async function getMatchDetails(matchId) {
       uri: matchUrl,
       transform: (body) => cheerio.load(body),
     });
-    
+
     const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
     const stage = html(".match-header-event-series").text().trim();
     const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
@@ -146,29 +146,29 @@ async function getMatchDetails(matchId) {
       const rounds = [];
       html(el).find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
         const roundNumber = parseInt(html(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
-    
+
         let winningTeam = null;
         let result = null;
         let method = null;
-    
+
         const team1Win = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win");
         const team2Win = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win");
-    
+
         if (team1Win) {
-            winningTeam = team1Name;
-            result = "ct-win";
-            method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src");
+          winningTeam = team1Name;
+          result = "ct-win";
+          method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src");
         } else if (team2Win) {
-            winningTeam = team2Name;
-            result = "t-win";
-            method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src");
+          winningTeam = team2Name;
+          result = "t-win";
+          method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src");
         }
-    
+
         rounds.push({
-            roundNumber,
-            winner: winningTeam,
-            result: result,
-            method: method || "desconocido",
+          roundNumber,
+          winner: winningTeam,
+          result: result,
+          method: method || "desconocido",
         });
       });
 
@@ -184,6 +184,7 @@ async function getMatchDetails(matchId) {
     });
 
     return matchData;
+
   } catch (err) {
     console.error("Error al obtener los detalles del partido:", err);
     return null;
