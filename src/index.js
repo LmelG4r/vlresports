@@ -23,7 +23,8 @@ app.use("/api/v1/players", require("./versions/v1/routes/players"));
 app.use("/api/v1/events", require("./versions/v1/routes/events"));
 app.use("/api/v1/matches", require("./versions/v1/routes/matches"));
 // Aquí estamos usando la ruta correcta para resultados
-app.use("/api/v1/results", resultadosRouter);
+app.use("/api/v1/results", require("./versions/v1/routes/results"));// Cambiar la ruta a /api/v1/resultados
+app.use("/api/v1/resultados", resultadosRouter);
 
 // Starting server
 app.listen(app.get("port"), () => {
