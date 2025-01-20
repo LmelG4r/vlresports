@@ -1,57 +1,25 @@
 const request = require("request-promise");
 const cheerio = require("cheerio");
-const cheerioLoad = cheerio.load; // Configuración correcta del método 'load'
+
 
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
 async function getMatchDetails(matchId) {
+  // Función para extraer los datos específicos de cada pestaña (Overview, Performance, Economy)
 
+function scrapeOverview(html) {
+    const overviewData = [];
 
-    try {
-    const matchUrl = `${vlrgg_url}/${matchId}`;
-    console.log(`Scrapeando datos de: ${matchUrl}`);
+    // Recorremos cada fila de la tabla (tbody > tr)
+    mapContext.find(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
+        const playerRow = html(el);
 
-    const html = await request({
-      uri: matchUrl,
-      transform: (body) => cheerioLoad(body),
-    });
-
-    const matchData = {
-        matchId,
-        tournament: html(".match-header-event div[style='font-weight: 700;']").text().trim() || "Torneo no especificado",
-        stage: html(".match-header-event-series").text().trim() || "Etapa no especificada",
-        date: html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim() || "Fecha no especificada",
-        teams: [
-          { name: html(".match-header-link.mod-1 .wf-title-med").text().trim() || "Equipo 1 no especificado" },
-          { name: html(".match-header-link.mod-2 .wf-title-med").text().trim() || "Equipo 2 no especificado" },
-        ],
-        format: html(".match-header-vs-note").eq(1).text().trim() || "Formato no especificado",
-        mapPicksBans: html(".match-header-note").text().trim() || "Mapas no especificados",
-        maps: [], // Información específica por mapa
-      };
-  
-      // Procesar los datos de cada mapa
-      html(".vm-stats-game").each((i, el) => {
-        const mapElement = cheerioLoad(el);
-        const mapNameRaw = mapElement.find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
-        const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
-  
-        const duration = mapElement.find(".vm-stats-game-header .map-duration").text().trim();
-        const team1Name = mapElement.find(".vm-stats-game-header .team .team-name").eq(0).text().trim();
-        const team2Name = mapElement.find(".vm-stats-game-header .team .team-name").eq(1).text().trim();
-        const team1Score = mapElement.find(".vm-stats-game-header .team .score").eq(0).text().trim();
-        const team2Score = mapElement.find(".vm-stats-game-header .team .score").eq(1).text().trim();
-  
-        // Scrapeamos el overview específico del mapa
-        const playerRow = cheerioLoad(el);
-  
         // Extraer información del jugador y su equipo
         const playerName = playerRow.find(".mod-player .text-of").text().trim() || "Jugador no especificado";
         const teamName = playerRow.find(".mod-player .ge-text-light").text().trim() || "Equipo no especificado";
-  
+
         // Extraer el agente (atributo "title" del <img>)
         const agent = playerRow.find(".mod-agents img").attr("title") || "Agente no especificado";
-  
 
         // Extraer estadísticas
         const stats = {
@@ -112,88 +80,116 @@ async function getMatchDetails(matchId) {
                 defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
             },
         };
-
-        overview.push({ playerName, teamName, agent, stats });
-
+                
         
+        // Agregar los datos del jugador al array de resultados
+        overviewData.push({
+            playerName,
+            teamName,
+            agent,
+            stats,
+        });
+    });
+
+    return overviewData;
+}
+
+try {
+    const matchUrl = `${vlrgg_url}/${matchId}`;
+    console.log(`Scrapeando datos de: ${matchUrl}`);
+
+    const html = await request({
+      uri: matchUrl,
+      transform: (body) => cheerio.load(body),
+    });
+
     // Devuelve los detalles como un objeto
-    matchData.maps.push({
-        mapName: mapName || "Mapa no especificado",
-        duration: duration || "Duración no especificada",
-        teams: [
+    const matchData = {
+      matchId,
+      tournament: tournament || "Torneo no especificado",
+      stage: stage || "Etapa no especificada",
+      date: date || "Fecha no especificada",
+      teams: [
           { name: team1Name || "Equipo 1 no especificado", score: team1Score || "0" },
           { name: team2Name || "Equipo 2 no especificado", score: team2Score || "0" },
-        ],
-        overview, // Información del overview específica del mapa
-        rounds: [], // Puedes completar esto como en tu código actual
-      });
-    });
+      ],
+      format: format || "Formato no especificado",
+      mapPicksBans: mapPicksBans || "Mapas no especificados",
+      overview: scrapeOverview(html), 
+      maps: [],
+  };
   
 
   
   // Extraer mapas jugados y su información
-  const mapData = [];
-  html(".vm-stats-game").each((_, element) =>{
-    const mapNameRaw = html(el).find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
+  html(".vm-stats-game").each((_, el) => {
+    const mapContext = html(el);
+
+    const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
     const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+    const duration = mapContext.find(".map-duration").text().trim();
 
-    const duration = html(el).find(".vm-stats-game-header .map-duration").text().trim();
+    const teams = [
+        {
+          name: mapContext.find(".team-name").eq(0).text().trim() || "Equipo 1 no especificado",
+          score: mapContext.find(".score").eq(0).text().trim() || "0",
+        },
+        {
+          name: mapContext.find(".team-name").eq(1).text().trim() || "Equipo 2 no especificado",
+          score: mapContext.find(".score").eq(1).text().trim() || "0",
+        },
+      ];
 
-    const team1Name = html(el).find(".vm-stats-game-header .team .team-name").eq(0).text().trim();
-    const team2Name = html(el).find(".vm-stats-game-header .team .team-name").eq(1).text().trim();
-
-    const team1Score = html(el).find(".vm-stats-game-header .team .score").eq(0).text().trim();
-    const team2Score = html(el).find(".vm-stats-game-header .team .score").eq(1).text().trim();
-
-    const rounds = [];
-    html(el).find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
-        const roundNumber = parseInt(html(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
-
-        let winningTeam = null;
-        let result = null;
-        let method = null;
-
-        const team1Win = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win");
-        const team2Win = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win");
-
-        if (team1Win) {
-            winningTeam = team1Name;
-            result = "ct-win";
-            method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src");
-        } else if (team2Win) {
-            winningTeam = team2Name;
-            result = "t-win";
-            method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src");
-        }
-
-        // Manejo de URL relativas
-        if (method) {
-            if (method.startsWith("/")) {
-                method = "https://www.vlr.gg" + method;  // Añadimos la base de la URL
-            }
-            
-            if (method.includes("elim.webp")) {
-                method = "elim";
-            } else if (method.includes("defuse.webp")) {
-                method = "defuse";
-            } else if (method.includes("boom.webp")) {
-                method = "boom";
-            } else {
-                method = "unknown";
-            }
-        } else {
-            method = "unknown";
-        }
-
-        // Solo agregar si hay un resultado
-        if (result) {
-            rounds.push({
-                roundNumber,
-                result: `${result} (${winningTeam})`,
-                method,
-            });
-        }
-    });
+      const rounds = [];
+      html(el).find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
+          const roundNumber = parseInt(html(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
+      
+          let winningTeam = null;
+          let result = null;
+          let method = null;
+      
+          const team1Win = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win");
+          const team2Win = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win");
+      
+          if (team1Win) {
+              winningTeam = team1Name;
+              result = "ct-win";
+              method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src");
+          } else if (team2Win) {
+              winningTeam = team2Name;
+              result = "t-win";
+              method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src");
+          }
+      
+          // Manejo de URL relativas
+          if (method) {
+              if (method.startsWith("/")) {
+                  method = "https://www.vlr.gg" + method; // Añadimos la base de la URL
+              }
+      
+              if (method.includes("elim.webp")) {
+                  method = "elim";
+              } else if (method.includes("defuse.webp")) {
+                  method = "defuse";
+              } else if (method.includes("boom.webp")) {
+                  method = "boom";
+              } else {
+                  method = "unknown";
+              }
+          } else {
+              method = "unknown";
+          }
+      
+          // Solo agregar si hay un resultado
+          if (result) {
+              rounds.push({
+                  roundNumber,
+                  result: `${result} (${winningTeam})`, // Corrección de interpolación
+                  method,
+              });
+          }
+      });
+      
 
     const mapInfo = {
         mapName: mapName || "Mapa no especificado",
@@ -211,14 +207,14 @@ async function getMatchDetails(matchId) {
         rounds, // Rondas escaladas correctamente
     };
 
-    mapData.push({
+    matchData.maps.push({
         mapName,
-        mapDuration,
-        team1: { name: team1, score: team1Score },
-        team2: { name: team2, score: team2Score },
-        rounds,
+        duration,
+        teams,
         overview,
-    });
+      });
+   
+
 });
 
 
@@ -228,7 +224,7 @@ async function getMatchDetails(matchId) {
   } catch (error) {
     throw new Error("Error obteniendo detalles del partido: " + error.message);
   }
-}
+};
 
 module.exports = {
   getMatchDetails,
