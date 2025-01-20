@@ -1,6 +1,6 @@
 const request = require("request-promise");
 const cheerio = require("cheerio");
-
+const cheerioLoad = cheerio.load; // Configuración correcta del método 'load'
 
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
@@ -8,8 +8,8 @@ async function getMatchDetails(matchId) {
 function scrapeOverview(html) {
     const overviewData = [];
 
-    cheerio(".wf-table-inset.mod-overview tbody tr", mapElement).each((_, el) => {
-        const playerRow = cheerio(el);
+    cheerioLoad(".wf-table-inset.mod-overview tbody tr", mapElement).each((_, el) => {
+        const playerRow = cheerioLoad(el);
   
         // Extraer información del jugador y su equipo
         const playerName = playerRow.find(".mod-player .text-of").text().trim() || "Jugador no especificado";
@@ -98,7 +98,7 @@ function scrapeOverview(html) {
 
     const html = await request({
       uri: matchUrl,
-      transform: (body) => cheerio.load(body),
+      transform: (body) => cheerioLoad(body),
     });
 
     const matchData = {
