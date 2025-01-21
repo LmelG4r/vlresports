@@ -120,7 +120,7 @@ async function scrapeMatchDetails(matchId) {
                 { name: team2Name || "Equipo 2 no especificado", score: team2Score || "0" },
             ],
             format: format || "Formato no especificado",
-            mapPicksBans: mapPicksBans || "Mapas no especificados",
+            mapPicksBans: mapPicksBans || "Estadisticas de todos los mapas",
             overview_general: scrapeOverview(html), // Overview general
             maps: [],
         };
