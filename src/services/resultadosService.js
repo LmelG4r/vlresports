@@ -154,13 +154,22 @@ async function scrapeMatchDetails(matchId) {
                 const team2Win = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win");
         
                 if (team1Win) {
-                    winningTeam = teams[0].name;
-                    result = "ct-win";
-                    method = html(roundEl).find(".rnd-sq").eq(0).find("img").attr("src");
+                    winningTeam = teams[0].name; // Asumes que teams[0] es el de la izquierda
+                    method = team1Sq.find("img").attr("src");
+
+                    if (team1Sq.hasClass("mod-ct")) {
+                        result = "ct-win";
+                    } else if (team1Sq.hasClass("mod-t"))
+                        result = "t-win";
                 } else if (team2Win) {
-                    winningTeam = teams[1].name;
-                    result = "t-win";
-                    method = html(roundEl).find(".rnd-sq").eq(1).find("img").attr("src");
+                    winningTeam = teams[1].name; // Asumes que teams[1] es el de la derecha
+                    method = team2Sq.find("img").attr("src");
+
+                    if (team2Sq.hasClass("mod-ct")) {
+                        result = "ct-win";
+                    } else if (team2Sq.hasClass("mod-t")) {
+                        result = "t-win";
+                    }
                 }
         
                 rounds.push({
