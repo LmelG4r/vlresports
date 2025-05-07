@@ -147,7 +147,7 @@ async function scrapeMatchDetails(matchId) {
                 const roundElement = html(roundEl); // Es buena práctica guardar el elemento jQuery/Cheerio
                 const team1Sq = roundElement.find(".rnd-sq").eq(0);
                 const team2Sq = roundElement.find(".rnd-sq").eq(1);
-
+                
                 const team1Win = team1Sq.hasClass("mod-win");
                 const team2Win = team2Sq.hasClass("mod-win");
 
@@ -156,9 +156,6 @@ async function scrapeMatchDetails(matchId) {
                 let winningTeam = null;
                 let result = null;
                 let method = null;
-        
-                const team1Win = html(roundEl).find(".rnd-sq").eq(0).hasClass("mod-win");
-                const team2Win = html(roundEl).find(".rnd-sq").eq(1).hasClass("mod-win");
         
                 if (team1Win) {
                     winningTeam = teams[0].name; // Asumes que teams[0] es el de la izquierda
