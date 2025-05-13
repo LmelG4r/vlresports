@@ -223,6 +223,10 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
         // --- LÓGICA DE CORRELACIÓN USANDO EL ORDEN/ÍNDICE ---
         if (index < mapsArray.length) {
             const targetMap = mapsArray[index]; // Obtenemos el mapa de nuestro array por su índice
+            if (!targetMap.played && targetMap.mapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
+                console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.mapName}`);
+                return; // Saltar al siguiente mapa
+            }
             const mapName = targetMap.mapName;  // Usamos el nombre que YA TENEMOS de la pestaña Overview
 
             console.log(`Procesando estadísticas de Performance para el mapa: ${mapName} (game-id: ${gameId}, índice en array: ${index})`);
@@ -351,7 +355,8 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
         } else {
             // Quitar cualquier cosa que no sea dígito o punto decimal para el caso de "2,000" o "2.000"
             // Pero vlr.gg usa "2k" o "2000", no comas.
-            value = parseFloat(text.replace(/[^0-9.]/g, ''));
+            const cleanedText = text.replace(/[^0-9.]/g, '');
+            value = parseFloat(cleanedText);
         }
         return isNaN(value) ? 0 : Math.round(value); // Redondear por si acaso (ej. 8.2k -> 8200)
     };
@@ -373,11 +378,15 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
         const team1BankText = team1RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
         const team2BankText = team2RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
         
+        console.log(`Ronda ${roundNum} del mapa ${mapName}:`); // Añade mapName aquí para diferenciar los logs por mapa
+        console.log(`  Team1 (arriba en tabla eco): Texto Banco="${team1BankText.trim()}", Parsed=${parseBankValue(team1BankText)}`);
+        console.log(`  Team2 (abajo en tabla eco): Texto Banco="${team2BankText.trim()}", Parsed=${parseBankValue(team2BankText)}`);
+
         const team1Bank = parseBankValue(team1BankText);
         const team2Bank = parseBankValue(team2BankText);
         
         // --- DEBUG LOG ---
-        // console.log(`Ronda ${roundNum}: Team1 Bank Text: "${team1BankText}", Parsed: ${team1Bank} | Team2 Bank Text: "${team2BankText}", Parsed: ${team2Bank}`);
+        console.log(`Ronda ${roundNum}: Team1 Bank Text: "${team1BankText}", Parsed: ${team1Bank} | Team2 Bank Text: "${team2BankText}", Parsed: ${team2Bank}`);
         // --- FIN DEBUG LOG ---
 
         const team1BuySq = team1RoundCell.find('div.rnd-sq');
@@ -407,13 +416,36 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
         const targetRound = mapRoundsArrayToUpdate.find(r => r.roundNumber === roundNum);
 
         if (targetRound) {
-            targetRound.winner = winningTeamNameCanonical || targetRound.winner;
-            targetRound.result = resultForJSON || targetRound.result;
-            targetRound.method = methodIcon || targetRound.method;
-            targetRound[`${cleanTeam1Key}Bank`] = team1Bank; // Clave generada dinámicamente
-            targetRound[`${cleanTeam2Key}Bank`] = team2Bank; // Clave generada dinámicamente
+            // ... (asignación de winner, result, method como antes) ...
+        
+            const nameFromTeam1RowHTML = team1Row.find('td:first-child div.team').text().replace(/\s+/g, ' ').trim().toLowerCase();
+            const nameFromTeam2RowHTML = team2Row.find('td:first-child div.team').text().replace(/\s+/g, ' ').trim().toLowerCase();
+        
+            const canonTeam1Lower = equipo1NombreCanonico.toLowerCase();
+            const canonTeam2Lower = equipo2NombreCanonico.toLowerCase();
+        
+            // Generar claves limpias para los nombres canónicos
+            const keyForCanonTeam1 = canonTeam1Lower.replace(/\s+/g, '') + 'Bank';
+            const keyForCanonTeam2 = canonTeam2Lower.replace(/\s+/g, '') + 'Bank';
+        
+            // Comprobar a quién pertenece team1Bank (extraído de team1Row)
+            if (nameFromTeam1RowHTML.includes(canonTeam1Lower.substring(0, Math.min(3, canonTeam1Lower.length))) || canonTeam1Lower.includes(nameFromTeam1RowHTML.substring(0, Math.min(3, nameFromTeam1RowHTML.length)))) {
+                targetRound[keyForCanonTeam1] = team1Bank;
+                targetRound[keyForCanonTeam2] = team2Bank; // Asumimos que team2Row es el otro equipo
+            } else if (nameFromTeam1RowHTML.includes(canonTeam2Lower.substring(0, Math.min(3, canonTeam2Lower.length))) || canonTeam2Lower.includes(nameFromTeam1RowHTML.substring(0, Math.min(3, nameFromTeam1RowHTML.length)))) {
+                targetRound[keyForCanonTeam2] = team1Bank; // team1Row era en realidad equipo2NombreCanonico
+                targetRound[keyForCanonTeam1] = team2Bank; // team2Row era en realidad equipo1NombreCanonico
+            } else {
+                console.warn(`[parseEcoRoundDetailsTable] Mapa ${mapName}, Ronda ${roundNum}: No se pudo hacer coincidir nombre de tabla eco "${nameFromTeam1RowHTML}" con nombres canónicos. Usando asignación por defecto.`);
+                // Asignación por defecto (podría ser incorrecta si el orden de la tabla no coincide con tu team1/team2 global)
+                targetRound[keyForCanonTeam1] = team1Bank;
+                targetRound[keyForCanonTeam2] = team2Bank;
+            }
+            // --- DEBUG LOG para la asignación ---
+            // console.log(`Ronda ${roundNum} Mapa ${mapName} - Asignación de bancos: ${keyForCanonTeam1}=${targetRound[keyForCanonTeam1]}, ${keyForCanonTeam2}=${targetRound[keyForCanonTeam2]}`);
+        
         } else {
-            console.warn(`[parseEcoRoundDetailsTable] No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate para el mapa. Datos económicos para esta ronda no se guardarán.`);
+            console.warn(`[parseEcoRoundDetailsTable] Mapa ${mapName}: No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate. Datos económicos para esta ronda no se guardarán.`);
         }
     });
 }
@@ -460,6 +492,10 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
         const mapContainer = economyPageHtml(mapElement);
         const gameId = mapContainer.attr('data-game-id');
         const targetMap = mapsArray[index]; // Asumiendo que index < mapsArray.length
+        if (!targetMap.played && targetMap.mapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
+            console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.mapName}`);
+            return; // Saltar al siguiente mapa
+        }
         const mapName = targetMap ? targetMap.mapName : "NombreDesconocido";
     
         console.log(`[parseEconomyPage] Procesando sección de mapa: ${mapName} (gameId: ${gameId})`); // Log ANTES de definir mapEconTables
@@ -471,10 +507,13 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
             return; // Saltar esta iteración
         }
         // Dentro del .each de los mapas en parseEconomyPage
-        console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable (mapa <span class="math-inline">\{mapName\}\) \- team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2Name}"`);
-        parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1Name, team2Name);
+        console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa ${mapName}. team1Name: "${team1Name}", team2Name: "${team2Name}"`);
         if (index < mapsArray.length) {
             const targetMap = mapsArray[index]; 
+            if (!targetMap.played && targetMap.mapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
+                console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.mapName}`);
+                return; // Saltar al siguiente mapa
+            }
             const mapName = targetMap.mapName;  
 
             console.log(`Procesando estadísticas de Economy para el mapa: ${mapName} (game-id: ${gameId}, índice: ${index})`);
@@ -626,6 +665,28 @@ const scrapeMatchDetails = async (matchId) =>{
 
             const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
             const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+
+            let played = true;
+            const scoreTeam1 = parseInt(mapContext.find(".score").eq(0).text().trim(), 10);
+            const scoreTeam2 = parseInt(mapContext.find(".score").eq(1).text().trim(), 10);
+
+            if (mapName && (isNaN(scoreTeam1) || isNaN(scoreTeam2) || (scoreTeam1 === 0 && scoreTeam2 === 0 && mapContext.find(".vlr-rounds .vlr-rounds-row-col").length === 0))) {
+                // Si el nombre del mapa está presente pero los marcadores son 0-0 y no hay rondas, o no son números,
+                // podría no haberse jugado. O si el nombre del mapa está vacío.
+                // El criterio exacto puede variar. vlr.gg a veces solo omite el bloque del mapa no jugado.
+                if (!mapName || mapName.trim() === '') { // Si el nombre del mapa extraído está vacío
+                    played = false;
+                    console.log(`[scrapeMatchDetails] Mapa con nombre vacío detectado como no jugado.`);
+                }
+                // Si vlr.gg incluye el div del mapa pero está vacío de contenido esencial:
+                if (mapContext.find(".vlr-rounds-row-col").length === 0 && (scoreTeam1 === 0 && scoreTeam2 === 0)) {
+                    console.log(`[scrapeMatchDetails] Mapa "${mapName}" parece no jugado (0-0 sin rondas).`);
+                    // podrías marcarlo como played = false; aunque tu lógica actual de parseo ya lo maneja bien al no encontrar datos.
+                }
+            }
+
+            matchData.maps.push({ mapName: mapName || `Mapa No Jugado ${index + 1}`, duration, teams, rounds, played }); // Añade 'played'
+
             const duration = mapContext.find(".map-duration").text().trim();
 
             const teams = [
