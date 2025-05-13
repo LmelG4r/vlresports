@@ -470,8 +470,19 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
     // 2. PROCESAR SECCIONES DE ESTADÍSTICAS POR MAPA (data-game-id != 'all')
     console.log("Buscando secciones de estadísticas de economía por mapa...");
     economyPageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
-        const mapContainer = economyPageHtml(mapElement); 
+        const mapContainer = economyPageHtml(mapElement);
         const gameId = mapContainer.attr('data-game-id');
+        const targetMap = mapsArray[index]; // Asumiendo que index < mapsArray.length
+        const mapName = targetMap ? targetMap.mapName : "NombreDesconocido";
+    
+        console.log(`[parseEconomyPage] Procesando sección de mapa: ${mapName} (gameId: ${gameId})`); // Log ANTES de definir mapEconTables
+    
+        const mapEconTables = mapContainer.find('table.wf-table-inset.mod-econ'); // mapEconTables DEFINIDO AQUÍ
+        
+        if (!targetMap) {
+            console.warn(`[parseEconomyPage] No se encontró targetMap para el índice ${index}`);
+            return; // Saltar esta iteración
+        }
         // Dentro del .each de los mapas en parseEconomyPage
         console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable (mapa <span class="math-inline">\{mapName\}\) \- team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2Name}"`);
         parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1Name, team2Name);
@@ -491,12 +502,11 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
                 targetMap.economy_data.summary = parseEcoSummaryTable(mapEconTables.eq(0), economyPageHtml);
             }
             if (mapEconTables.length >= 2) {
-                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1Name, team2Name);
-            }
-            console.log(`Datos de Economy procesados y añadidos para el mapa: ${mapName}`);
-        } else {
-            console.log(`Se encontró un bloque de mapa de economía (${gameId}) en pág. Economy (índice ${index}) sin correspondencia en mapsArray.`);
-        }
+                console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa <span class="math-inline">\{mapName\}\. team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2NameGlobal}"`);
+                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1NameGlobal, team2NameGlobal);
+            } else {
+                console.log(`[parseEconomyPage] No se encontró la segunda tabla de economía para el mapa ${mapName}`);
+            }}
     });
 
     return { overall: overallEconomyResult }; // Devuelve las estadísticas generales
@@ -694,9 +704,13 @@ const scrapeMatchDetails = async (matchId) =>{
         }
 
         if (economyPageHtml) {
-            const econData = parseEconomyPage(economyPageHtml, matchData.maps, matchData.maps, team1Name, team2Name);
-            matchData.economy_general = econData.overall; // Guarda los datos generales de economía
-            // matchData.maps ya habrá sido actualizado por referencia por parseEconomyPage
+            console.log(`[scrapeMatchDetails] Antes de llamar a parseEconomyPage:`);
+            console.log(`  matchData.maps (tipo): ${typeof matchData.maps}, ¿es array?: ${Array.isArray(matchData.maps)}`);
+            console.log(`  team1Name (valor): "${team1Name}", (tipo): ${typeof team1Name}`);
+            console.log(`  team2Name (valor): "${team2Name}", (tipo): ${typeof team2Name}`);
+        
+            const econData = parseEconomyPage(economyPageHtml, matchData.maps, team1Name, team2Name);
+            matchData.economy_general = econData.overall;
         }
 
         return matchData;
