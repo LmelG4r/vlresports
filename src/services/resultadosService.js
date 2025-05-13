@@ -475,7 +475,7 @@ const scrapeMatchDetails = async (matchId) =>{
         }
 
         const economyTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="economy"]';
-        const economyHref = html(economyTabSelector).attr('href');
+        const economyHref = $(economyTabSelector).attr('href');
         let economyFullUrl = null;
 
         if (economyHref) {
@@ -514,9 +514,9 @@ const scrapeMatchDetails = async (matchId) =>{
             }
         }
         
-        const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
-        const stage = html(".match-header-event-series").text().trim();
-        const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
+        const tournament = $(".match-header-event div[style='font-weight: 700;']").text().trim();
+        const stage = $(".match-header-event-series").text().trim();
+        const date = $(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
 
 
 
