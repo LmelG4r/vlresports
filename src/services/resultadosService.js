@@ -517,8 +517,11 @@ function parseEconomyPage(economyPageHtml, mapsArray) { // mapsArray es matchDat
                 targetMap.economy_data.summary = parseEcoSummaryTable(mapEconTables.eq(0), economyPageHtml);
             }
             if (mapEconTables.length >= 2) {
-                // Pasamos targetMap.rounds para que se actualice con los detalles económicos
-                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds);
+                // targetMap.rounds DEBE ser el array donde cada elemento es un objeto de ronda que queremos enriquecer.
+                // Si targetMap.rounds aún no tiene los números de ronda base, necesitaríamos otra fuente para ellos.
+                // Por ahora, asumo que targetMap.rounds ya existe y tiene objetos con al menos { roundNumber: X }
+                // La función parseEcoRoundDetailsTable modificará estos objetos por referencia.
+                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds /* Aquí pasas el array de rondas del mapa */);
             }
             console.log(`Datos de Economy procesados y añadidos para el mapa: ${mapName}`);
         } else {
