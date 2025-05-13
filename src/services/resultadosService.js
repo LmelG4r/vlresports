@@ -302,169 +302,125 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
     return summary;
 }
 
-function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, teamNamesFromSummary) {
-    // teamNamesFromSummary: Podríamos pasar los nombres de equipo ya extraídos por parseEcoSummaryTable
-    // o extraerlos aquí de manera más robusta si es necesario.
-
-    // Seleccionamos las filas de datos de la tabla de economía por ronda.
-    // Usualmente son la segunda y tercera fila si la primera es cabecera,
-    // o las dos primeras si no hay cabecera de "Ronda X".
-    // Es más seguro buscar filas que contengan un nombre de equipo en su primer <td>.
+function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, equipo1NombreCanonico, equipo2NombreCanonico) {
     const dataRows = tableCheerio.find('tr').filter((i, rowEl) => {
         return pageCheerioInstance(rowEl).find('td:first-child div.team').length > 0;
     });
 
     if (dataRows.length < 2) {
-        console.log("No se encontraron suficientes filas de datos de equipo en la tabla de detalles de economía por ronda.");
-        return; // O devolver un array vacío si no se actualiza directamente
+        console.error("[parseEcoRoundDetailsTable] No se encontraron suficientes filas de datos de equipo.");
+        return;
     }
 
     const team1Row = pageCheerioInstance(dataRows.eq(0));
     const team2Row = pageCheerioInstance(dataRows.eq(1));
 
-    const team1Name = team1Row.find('td:first-child div.team').text().trim();
-    const team2Name = team2Row.find('td:first-child div.team').text().trim();
+    const team1NameFromTable = team1Row.find('td:first-child div.team').text().replace(/\s+/g, ' ').trim();
+    const team2NameFromTable = team2Row.find('td:first-child div.team').text().replace(/\s+/g, ' ').trim();
 
-    // Iteramos sobre las celdas de ronda de la primera fila de equipo (asumiendo que ambas filas tienen el mismo número de rondas)
-    // Empezamos desde la segunda celda (índice 1) porque la primera es el nombre del equipo.
-    team1Row.find('td').slice(1).each((roundIndex, team1RoundCellElement) => {
-        const roundNum = roundIndex + 1; // Las rondas son 1-indexed
+    // Determinar cuál nombre canónico corresponde a team1NameFromTable y team2NameFromTable
+    // Esto es importante si el orden en la tabla no siempre coincide con tu equipo1/equipo2 global.
+    // Por simplicidad ahora, asumiré que equipo1NombreCanonico es el de team1Row.
+    const currentMapTeam1Name = equipo1NombreCanonico;
+    const currentMapTeam2Name = equipo2NombreCanonico;
+
+    const cleanTeam1Key = currentMapTeam1Name.replace(/\s+/g, '').toLowerCase();
+    const cleanTeam2Key = currentMapTeam2Name.replace(/\s+/g, '').toLowerCase();
+
+    // Extraer los números de ronda de la fila de cabecera de la tabla
+    // Esta fila suele ser la primera <tr> dentro de <table> o la <tr> justo antes de las dataRows.
+    // Buscamos <th> o <td> que contengan solo números.
+    const roundNumberHeaders = [];
+    tableCheerio.find('tr').first().find('th, td').slice(1).each((idx, cellEl) => { // slice(1) para saltar la primera celda vacía/nombre
+        const roundNumText = pageCheerioInstance(cellEl).text().trim();
+        const roundNum = parseInt(roundNumText, 10);
+        if (!isNaN(roundNum)) {
+            roundNumberHeaders.push(roundNum);
+        }
+    });
+
+    if (roundNumberHeaders.length === 0) {
+        console.error("[parseEcoRoundDetailsTable] No se pudieron extraer los números de ronda de la cabecera de la tabla de economía.");
+        return;
+    }
+
+    // Iterar usando los roundNumberHeaders como guía
+    roundNumberHeaders.forEach((roundNum, roundIndexInHeader) => {
+        // roundIndexInHeader es 0 para la primera ronda, 1 para la segunda, etc.
+        // Las celdas de datos de ronda empiezan después de la celda del nombre del equipo (índice 1 en la fila)
+        const dataCellIndex = roundIndexInHeader + 1;
+
+        const team1RoundCellElement = team1Row.find('td').eq(dataCellIndex);
+        const team2RoundCellElement = team2Row.find('td').eq(dataCellIndex);
+
+        if (!team1RoundCellElement.length || !team2RoundCellElement.length) {
+            console.warn(`[parseEcoRoundDetailsTable] No se encontró celda de datos para la ronda ${roundNum} (índice de cabecera ${roundIndexInHeader})`);
+            return; // Saltar esta ronda si faltan celdas
+        }
 
         const team1RoundCell = pageCheerioInstance(team1RoundCellElement);
-        const team2RoundCellElement = team2Row.find('td').eq(roundIndex + 1); // Celda correspondiente para el equipo 2
         const team2RoundCell = pageCheerioInstance(team2RoundCellElement);
 
         const team1BankText = team1RoundCell.find('div.bank').text().trim();
         const team2BankText = team2RoundCell.find('div.bank').text().trim();
-        
-        // Convertir a número, manejar 'N/A' o errores de parseo si es necesario
+
         const team1Bank = parseInt(team1BankText.replace(/[^0-9]/g, ''), 10) || 0;
         const team2Bank = parseInt(team2BankText.replace(/[^0-9]/g, ''), 10) || 0;
-
 
         const team1BuySq = team1RoundCell.find('div.rnd-sq');
         const team2BuySq = team2RoundCell.find('div.rnd-sq');
 
-        const team1BuyType = team1BuySq.text().trim();
-        const team2BuyType = team2BuySq.text().trim();
+        let winningTeamNameCanonical = null;
+        let resultForJSON = null;
+        let methodIcon = team1BuySq.find('img').attr('src') || team2BuySq.find('img').attr('src') || ''; // Tomar el primer ícono que se encuentre
 
-        let winningTeamName = null;
-        let winningSide = null; // 'ct' o 't'
-        let resultForJSON = null; // "ct-win" o "t-win"
-        let methodIcon = ''; // El src de la imagen de resultado de ronda (elim, spike, time)
 
         if (team1BuySq.hasClass('mod-win')) {
-            winningTeamName = team1Name;
-            methodIcon = team1BuySq.find('img').attr('src'); // Asumiendo que hay un img dentro de rnd-sq para el ícono de método
-            if (team1BuySq.hasClass('mod-ct')) {
-                winningSide = 'ct';
-                resultForJSON = 'ct-win';
-            } else if (team1BuySq.hasClass('mod-t')) {
-                winningSide = 't';
-                resultForJSON = 't-win';
-            }
+            winningTeamNameCanonical = currentMapTeam1Name;
+            methodIcon = team1BuySq.find('img').attr('src') || methodIcon;
+            if (team1BuySq.hasClass('mod-ct')) resultForJSON = 'ct-win';
+            else if (team1BuySq.hasClass('mod-t')) resultForJSON = 't-win';
         } else if (team2BuySq.hasClass('mod-win')) {
-            winningTeamName = team2Name;
-            methodIcon = team2BuySq.find('img').attr('src');
-            if (team2BuySq.hasClass('mod-ct')) {
-                winningSide = 'ct';
-                resultForJSON = 'ct-win';
-            } else if (team2BuySq.hasClass('mod-t')) {
-                winningSide = 't';
-                resultForJSON = 't-win';
-            }
-        }
-        
-        // Construir el objeto de economía para esta ronda según tu nueva estructura
-        const currentRoundEcoData = {
-            roundNumber: roundNum,
-            winner: winningTeamName, // Nombre del equipo ganador
-            result: resultForJSON,   // "ct-win" o "t-win"
-            method: methodIcon,      // URL del ícono de cómo terminó la ronda
-            // Los nombres de los bancos deben ser dinámicos o mapeados a los nombres de equipo.
-            // Para el ejemplo, usaré team1Name y team2Name como claves, pero puedes ajustarlo.
-            // Asegúrate de que los nombres de equipo no tengan caracteres que invaliden las claves JSON.
-            [team1Name.replace(/\s+/g, '_') + '_bank']: team1Bank,
-            [team1Name.replace(/\s+/g, '_') + '_buy_type']: team1BuyType, // Opcional, si quieres guardar el tipo de compra
-            [team2Name.replace(/\s+/g, '_') + '_bank']: team2Bank,
-            [team2Name.replace(/\s+/g, '_') + '_buy_type']: team2BuyType, // Opcional
-        };
-        
-        // Limpiar método para solo obtener la parte relevante (ej. elim.webp)
-        if (currentRoundEcoData.method && currentRoundEcoData.method.includes('/')) {
-            currentRoundEcoData.method = currentRoundEcoData.method.substring(currentRoundEcoData.method.lastIndexOf('/') + 1);
+            winningTeamNameCanonical = currentMapTeam2Name;
+            methodIcon = team2BuySq.find('img').attr('src') || methodIcon;
+            if (team2BuySq.hasClass('mod-ct')) resultForJSON = 'ct-win';
+            else if (team2BuySq.hasClass('mod-t')) resultForJSON = 't-win';
         }
 
+        if (methodIcon && methodIcon.includes('/')) {
+            methodIcon = methodIcon.substring(methodIcon.lastIndexOf('/') + 1);
+        }
 
-        // Actualizar el array de rondas del mapa existente (mapRoundsArrayToUpdate)
-        if (mapRoundsArrayToUpdate && roundNum > 0 && roundNum <= mapRoundsArrayToUpdate.length) {
-            const targetRound = mapRoundsArrayToUpdate[roundNum - 1];
-            if (targetRound && targetRound.roundNumber === roundNum) {
-                // Fusionar/Añadir datos económicos a la ronda existente
-                // Necesitas decidir cómo quieres que se llame el campo para estos datos dentro de targetRound.
-                // Según tu JSON deseado, es un array 'economy' dentro de cada objeto de mapa.
-                // PERO, este código es para DETALLES de ronda, no un array de rondas.
-                // Lo que quieres es que CADA objeto de ronda en mapRoundsArrayToUpdate tenga su info económica.
-                
-                // Modificamos el objeto de ronda directamente para añadirle la info económica
-                // según la estructura que definiste:
-                // maps: [ { mapName: "Ascent", economy: [ { roundNumber: 1, winner: "TH", teamHereticsBank: X, ... } ] } ]
-                // Aquí, 'targetRound' es un elemento del array `economy` dentro de un mapa.
-                // Así que actualizaremos targetRound directamente.
-                
-                targetRound.winner = currentRoundEcoData.winner; // Esto podría venir de Overview, asegúrate de la fuente de verdad
-                targetRound.result = currentRoundEcoData.result;
-                targetRound.method = currentRoundEcoData.method;
+        // Ahora BUSCAMOS la ronda correcta en mapRoundsArrayToUpdate
+        const targetRound = mapRoundsArrayToUpdate.find(r => r.roundNumber === roundNum);
 
-                // Crear un objeto para los bancos y añadirlo.
-                // Esto asume que team1Name y team2Name son los nombres exactos que quieres como claves
-                // o que tienes un mapeo (ej. "Team Heretics" -> "teamHereticsBank")
-                targetRound[`${team1Name.toLowerCase().replace(/ /g, '')}Bank`] = team1Bank;
-                targetRound[`${team2Name.toLowerCase().replace(/ /g, '')}Bank`] = team2Bank;
-
-                // Si quieres mantener los tipos de compra por equipo en esta ronda:
-                // targetRound[`${team1Name.toLowerCase().replace(/ /g, '')}BuyType`] = team1BuyType;
-                // targetRound[`${team2Name.toLowerCase().replace(/ /g, '')}BuyType`] = team2BuyType;
-
-
-            } else {
-                console.log(`Discrepancia de ronda al añadir economía: ${roundNum} vs ${targetRound?.roundNumber}`);
-                // Aquí no deberíamos hacer push a un array 'roundEcoDetails' separado si estamos actualizando
-                // el array 'mapRoundsArrayToUpdate' que es (maps[i].economy)
-            }
+        if (targetRound) {
+            targetRound.winner = winningTeamNameCanonical || targetRound.winner; // Mantener el ganador de Overview si no se encuentra aquí
+            targetRound.result = resultForJSON || targetRound.result;
+            targetRound.method = methodIcon || targetRound.method;
+            targetRound[`${cleanTeam1Key}Bank`] = team1Bank;
+            targetRound[`${cleanTeam2Key}Bank`] = team2Bank;
         } else {
-            // Si mapRoundsArrayToUpdate es null, es porque estamos en la sección "data-game-id='all'"
-            // En este caso, sí acumulamos los detalles en un array que se devolverá.
-            // Esta parte la gestionará `overallEconomyResult.round_details` en `parseEconomyPage`.
-            // Así que, para "all", necesitamos que esta función devuelva estos detalles.
-            // Voy a añadir un array para acumularlos si mapRoundsArrayToUpdate es null.
-            if (!mapRoundsArrayToUpdate) {
-                // Inicializar el array si es la primera vez y no estamos actualizando
-                if (typeof accumulatedRoundDetails === 'undefined') {
-                    // Esta variable debería declararse fuera del .each para que persista
-                }
-                // Y luego hacer push aquí.
-                // Esto requiere un pequeño rediseño de cómo se devuelven los datos para "all".
-            }
+            // Esto es más grave, significa que `mapRoundsArrayToUpdate` no tiene una entrada para `roundNum`
+            // O `mapRoundsArrayToUpdate` (targetMap.rounds) no se está poblando correctamente ANTES de llamar a esto.
+            console.warn(`[parseEcoRoundDetailsTable] No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate para el mapa.`);
+            // Podrías optar por crear la ronda aquí si no existe, pero es mejor asegurar que se cree desde Overview.
+            // Ejemplo si decides crearla:
+            /*
+            mapRoundsArrayToUpdate.push({
+                roundNumber: roundNum,
+                winner: winningTeamNameCanonical,
+                result: resultForJSON,
+                method: methodIcon,
+                [`${cleanTeam1Key}Bank`]: team1Bank,
+                [`${cleanTeam2Key}Bank`]: team2Bank
+            });
+            // Luego, necesitarías ordenar mapRoundsArrayToUpdate por roundNumber al final.
+            */
         }
     });
-
-    // Si mapRoundsArrayToUpdate fue provisto, se actualizó por referencia.
-    // Si no, necesitamos devolver los detalles acumulados (para el caso de data-game-id="all").
-    // Esto es un poco complicado con la estructura actual.
-    // Simplifiquemos: si mapRoundsArrayToUpdate es null, esta función debería construir y devolver el array de detalles de ronda.
-    if (!mapRoundsArrayToUpdate) {
-        const roundDetailsForOverall = [];
-        team1Row.find('td').slice(1).each((roundIndex, team1RoundCellElement) => {
-            const roundNum = roundIndex + 1;
-            // ... (repetir la lógica de extracción de arriba para team1Bank, team2Bank, winner, etc.)
-            // y luego:
-            // roundDetailsForOverall.push(currentRoundEcoData); donde currentRoundEcoData tiene la estructura completa
-        });
-        return roundDetailsForOverall; // Devuelve el array para el caso "overall"
-    }
-    // Si actualizamos por referencia, no es estrictamente necesario devolver nada,
-    // pero tu código original devolvía `roundEcoDetails` así que lo mantendré si esa variable se usa.
+    // Si creaste rondas nuevas, ordena:
+    // mapRoundsArrayToUpdate.sort((a, b) => a.roundNumber - b.roundNumber);
 }
 
 // --- FIN: Funciones Auxiliares ---
