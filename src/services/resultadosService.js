@@ -303,30 +303,33 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
 }
 
 function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, equipo1NombreCanonico, equipo2NombreCanonico) {
-
-    console.log(`[parseEcoRoundDetailsTable] Recibido equipo1NombreCanonico: "${equipo1NombreCanonico}", Tipo: ${typeof equipo1NombreCanonico}`);
-    console.log(`[parseEcoRoundDetailsTable] Recibido equipo2NombreCanonico: "${equipo2NombreCanonico}", Tipo: ${typeof equipo2NombreCanonico}`);
-
-    if (!equipo1NombreCanonico || !equipo2NombreCanonico) {
-        console.error("[parseEcoRoundDetailsTable] Error: Nombres de equipo canónicos no proporcionados o son undefined.");
-        console.error(`equipo1NombreCanonico: ${equipo1NombreCanonico}, equipo2NombreCanonico: ${equipo2NombreCanonico}`);
-        return; 
+    if (typeof equipo1NombreCanonico !== 'string' || typeof equipo2NombreCanonico !== 'string') {
+        console.error("[parseEcoRoundDetailsTable] Error: Nombres de equipo canónicos no son strings o no proporcionados.");
+        console.error(`equipo1NombreCanonico: ${equipo1NombreCanonico} (tipo: ${typeof equipo1NombreCanonico}), equipo2NombreCanonico: ${equipo2NombreCanonico} (tipo: ${typeof equipo2NombreCanonico})`);
+        return;
     }
 
     const currentMapTeam1Name = equipo1NombreCanonico;
     const currentMapTeam2Name = equipo2NombreCanonico;
 
-    // Ahora currentMapTeam1Name y currentMapTeam2Name tendrán los valores de team1Name y team2Name
-    // que definiste en el scope superior y pasaste a través de las funciones.
-    const cleanTeam1Key = currentMapTeam1Name.replace(/\s+/g, '').toLowerCase(); // Esto ya no debería fallar
-    const cleanTeam2Key = currentMapTeam2Name.replace(/\s+/g, '').toLowerCase(); // Esto ya no debería fallar
-    
+    const cleanTeam1Key = currentMapTeam1Name.replace(/\s+/g, '').toLowerCase();
+    const cleanTeam2Key = currentMapTeam2Name.replace(/\s+/g, '').toLowerCase();
 
-    // Extraer los números de ronda de la fila de cabecera de la tabla
-    // Esta fila suele ser la primera <tr> dentro de <table> o la <tr> justo antes de las dataRows.
-    // Buscamos <th> o <td> que contengan solo números.
+    const dataRows = tableCheerio.find('tr').filter((i, rowEl) => {
+        return pageCheerioInstance(rowEl).find('td:first-child div.team').length > 0;
+    });
+
+    if (dataRows.length < 2) {
+        console.error(`[parseEcoRoundDetailsTable] No se encontraron suficientes filas de datos de equipo (esperaba 2, encontré ${dataRows.length}).`);
+        // console.log("HTML de la tabla de economía que se está parseando:", tableCheerio.html()); // Descomenta para depurar
+        return;
+    }
+
+    const team1Row = pageCheerioInstance(dataRows.eq(0));
+    const team2Row = pageCheerioInstance(dataRows.eq(1));
+
     const roundNumberHeaders = [];
-    tableCheerio.find('tr').first().find('th, td').slice(1).each((idx, cellEl) => { // slice(1) para saltar la primera celda vacía/nombre
+    tableCheerio.find('tr').first().find('th, td').slice(1).each((idx, cellEl) => {
         const roundNumText = pageCheerioInstance(cellEl).text().trim();
         const roundNum = parseInt(roundNumText, 10);
         if (!isNaN(roundNum)) {
@@ -339,59 +342,50 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
         return;
     }
 
-    // Iterar usando los roundNumberHeaders como guía
-    roundNumberHeaders.forEach((roundNum, roundIndexInHeader) => {
-        // roundIndexInHeader es 0 para la primera ronda, 1 para la segunda, etc.
-        // Las celdas de datos de ronda empiezan después de la celda del nombre del equipo (índice 1 en la fila)
-        const dataCellIndex = roundIndexInHeader + 1;
-
-        const dataRows = tableCheerio.find('tr').filter((i, rowEl) => {
-            return pageCheerioInstance(rowEl).find('td:first-child div.team').length > 0;
-        });
-        
-        if (dataRows.length < 2) {
-            console.error("[parseEcoRoundDetailsTable] No se encontraron suficientes filas de datos de equipo para extraer team1Row/team2Row.");
-            return; // Salir si no podemos obtener las filas
+    const parseBankValue = (bankText) => {
+        if (!bankText) return 0;
+        const text = bankText.toLowerCase().trim(); // Añadido trim() aquí también
+        let value;
+        if (text.includes('k')) {
+            value = parseFloat(text.replace('k', '')) * 1000;
+        } else {
+            // Quitar cualquier cosa que no sea dígito o punto decimal para el caso de "2,000" o "2.000"
+            // Pero vlr.gg usa "2k" o "2000", no comas.
+            value = parseFloat(text.replace(/[^0-9.]/g, ''));
         }
-        
-        const team1Row = pageCheerioInstance(dataRows.eq(0));
-        const team2Row = pageCheerioInstance(dataRows.eq(1));
+        return isNaN(value) ? 0 : Math.round(value); // Redondear por si acaso (ej. 8.2k -> 8200)
+    };
+
+    roundNumberHeaders.forEach((roundNum, roundIndexInHeader) => {
+        const dataCellIndex = roundIndexInHeader + 1;
 
         const team1RoundCellElement = team1Row.find('td').eq(dataCellIndex);
         const team2RoundCellElement = team2Row.find('td').eq(dataCellIndex);
 
         if (!team1RoundCellElement.length || !team2RoundCellElement.length) {
-            console.warn(`[parseEcoRoundDetailsTable] No se encontró celda de datos para la ronda ${roundNum} (índice de cabecera ${roundIndexInHeader})`);
-            return; // Saltar esta ronda si faltan celdas
+            console.warn(`[parseEcoRoundDetailsTable] No se encontró celda de datos para la ronda ${roundNum} (índice de cabecera ${roundIndexInHeader}, dataCellIndex ${dataCellIndex})`);
+            return; 
         }
 
         const team1RoundCell = pageCheerioInstance(team1RoundCellElement);
         const team2RoundCell = pageCheerioInstance(team2RoundCellElement);
 
-        const team1BankText = team1RoundCell.find('div.bank').text().trim();
-        const team2BankText = team2RoundCell.find('div.bank').text().trim();
-        
-        const parseBankValue = (bankText) => {
-            if (!bankText) return 0;
-            const text = bankText.toLowerCase();
-            let value;
-            if (text.includes('k')) {
-                value = parseFloat(text.replace('k', '')) * 1000;
-            } else {
-                value = parseInt(text.replace(/[^0-9]/g, ''), 10);
-            }
-            return isNaN(value) ? 0 : value; // Devolver 0 si el parseo falla
-        };
+        const team1BankText = team1RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
+        const team2BankText = team2RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
         
         const team1Bank = parseBankValue(team1BankText);
         const team2Bank = parseBankValue(team2BankText);
+        
+        // --- DEBUG LOG ---
+        // console.log(`Ronda ${roundNum}: Team1 Bank Text: "${team1BankText}", Parsed: ${team1Bank} | Team2 Bank Text: "${team2BankText}", Parsed: ${team2Bank}`);
+        // --- FIN DEBUG LOG ---
 
         const team1BuySq = team1RoundCell.find('div.rnd-sq');
         const team2BuySq = team2RoundCell.find('div.rnd-sq');
 
         let winningTeamNameCanonical = null;
         let resultForJSON = null;
-        let methodIcon = team1BuySq.find('img').attr('src') || team2BuySq.find('img').attr('src') || ''; // Tomar el primer ícono que se encuentre
+        let methodIcon = team1BuySq.find('img').attr('src') || team2BuySq.find('img').attr('src') || '';
 
 
         if (team1BuySq.hasClass('mod-win')) {
@@ -410,38 +404,19 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
             methodIcon = methodIcon.substring(methodIcon.lastIndexOf('/') + 1);
         }
 
-        // Ahora BUSCAMOS la ronda correcta en mapRoundsArrayToUpdate
         const targetRound = mapRoundsArrayToUpdate.find(r => r.roundNumber === roundNum);
 
         if (targetRound) {
-            targetRound.winner = winningTeamNameCanonical || targetRound.winner; // Mantener el ganador de Overview si no se encuentra aquí
+            targetRound.winner = winningTeamNameCanonical || targetRound.winner;
             targetRound.result = resultForJSON || targetRound.result;
             targetRound.method = methodIcon || targetRound.method;
-            targetRound[`${cleanTeam1Key}Bank`] = team1Bank;
-            targetRound[`${cleanTeam2Key}Bank`] = team2Bank;
+            targetRound[`${cleanTeam1Key}Bank`] = team1Bank; // Clave generada dinámicamente
+            targetRound[`${cleanTeam2Key}Bank`] = team2Bank; // Clave generada dinámicamente
         } else {
-            // Esto es más grave, significa que `mapRoundsArrayToUpdate` no tiene una entrada para `roundNum`
-            // O `mapRoundsArrayToUpdate` (targetMap.rounds) no se está poblando correctamente ANTES de llamar a esto.
-            console.warn(`[parseEcoRoundDetailsTable] No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate para el mapa.`);
-            // Podrías optar por crear la ronda aquí si no existe, pero es mejor asegurar que se cree desde Overview.
-            // Ejemplo si decides crearla:
-            /*
-            mapRoundsArrayToUpdate.push({
-                roundNumber: roundNum,
-                winner: winningTeamNameCanonical,
-                result: resultForJSON,
-                method: methodIcon,
-                [`${cleanTeam1Key}Bank`]: team1Bank,
-                [`${cleanTeam2Key}Bank`]: team2Bank
-            });
-            // Luego, necesitarías ordenar mapRoundsArrayToUpdate por roundNumber al final.
-            */
+            console.warn(`[parseEcoRoundDetailsTable] No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate para el mapa. Datos económicos para esta ronda no se guardarán.`);
         }
     });
-    // Si creaste rondas nuevas, ordena:
-    // mapRoundsArrayToUpdate.sort((a, b) => a.roundNumber - b.roundNumber);
 }
-
 // --- FIN: Funciones Auxiliares ---
 function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
     console.log("Parseando página de Economy...");
