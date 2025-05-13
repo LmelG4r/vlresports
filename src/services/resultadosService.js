@@ -511,10 +511,10 @@ async function scrapeMatchDetails(matchId) {
         const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
 
         const teamsData = [];
-        const teamBlockElements = overviewHtml('.match-header-vs .match-header-vs-team'); // Selector para cada bloque de equipo
+        const teamBlockElements = html('.match-header-vs .match-header-vs-team'); // Selector para cada bloque de equipo
 
         teamBlockElements.each((index, element) => {
-            const teamElement = overviewHtml(element); // Envuelve el elemento actual con cheerio para buscar dentro de él
+            const teamElement = html(element); // Envuelve el elemento actual con cheerio para buscar dentro de él
             
             const teamName = teamElement.find('.match-header-vs-team-name .wf-title-med').text().trim();
             const score = teamElement.find('.js-spoiler .score').text().trim();
