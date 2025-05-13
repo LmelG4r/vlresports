@@ -463,7 +463,7 @@ const scrapeMatchDetails = async (matchId) =>{
         // CÓDIGO PARA EXTRAER LINKS DE PERFORMANCE Y ECONOMY 
 
         const performanceTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="performance"]';
-        const performanceHref = html(performanceTabSelector).attr('href');
+        const performanceHref = $(performanceTabSelector).attr('href');
         let performanceFullUrl = null;
 
         if (performanceHref) {
