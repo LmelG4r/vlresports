@@ -505,7 +505,7 @@ async function scrapeMatchDetails(matchId) {
                 console.error(`Error al cargar la página de Economy ${economyFullUrl}:`, tabError.message);
             }
         }
-
+        const $ = cheerio.load(matchPageHtml);
         const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
         const stage = html(".match-header-event-series").text().trim();
         const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
