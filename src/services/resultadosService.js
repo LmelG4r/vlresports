@@ -1,4 +1,4 @@
-const request = require("request-promise");
+const rp = require("request-promise");
 const cheerio = require("cheerio");
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
