@@ -74,6 +74,60 @@ function scrapeOverview(html, map = "general") {
                 defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
             },
         };
+        
+        function parsePerformancePage(performancePageHtml, mapsArray) {
+            console.log("Parseando página de Performance...");
+            let overallPerformance = { message: "Datos generales de performance pendientes." };
+            // Lógica para extraer overallPerformance de performancePageHtml (sección game=all)
+            // Ejemplo: const generalPerformanceTable = performancePageHtml('div.vm-stats[data-game-id="all"] .wf-table-inset.mod-overview'); // Ajusta el selector!
+            // if (generalPerformanceTable.length) { overallPerformance = parsePlayerStatsFromTable(generalPerformanceTable); }
+        
+        
+            // Itera sobre los bloques de mapa en la PÁGINA DE PERFORMANCE
+            performancePageHtml(".vm-stats-game").each((index, mapElement) => {
+                const mapContext = cheerio.load(performancePageHtml(mapElement).html()); // Carga el contexto del elemento mapa
+                const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
+                const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+        
+                const targetMap = mapsArray.find(m => m.mapName === mapName);
+                if (targetMap) {
+                    // Lógica para extraer las stats de performance para este mapa específico desde mapContext
+                    // Ejemplo: targetMap.performance_details = parseMapPerformanceStats(mapContext);
+                    targetMap.performance_stats = { data: `Stats de performance para ${mapName} pendientes.` }; // Placeholder
+                    console.log(`Parseando performance para el mapa: ${mapName}`);
+                } else {
+                    console.log(`Mapa ${mapName} (encontrado en pág. Performance) no hallado en mapsArray original.`);
+                }
+            });
+        
+            return { overall: overallPerformance }; // Devuelve solo el general por ahora, los mapas se actualizan por referencia
+        }
+        
+        function parseEconomyPage(economyPageHtml, mapsArray) {
+            console.log("Parseando página de Economy...");
+            let overallEconomy = { message: "Datos generales de economía pendientes." };
+            // Lógica para extraer overallEconomy de economyPageHtml (sección game=all)
+            // Ejemplo: const generalEconomyTable = economyPageHtml('div.vm-stats[data-game-id="all"] .MODULO_DE_ECONOMIA'); // Ajusta el selector!
+            // if (generalEconomyTable.length) { overallEconomy = parseEconomyStatsFromTable(generalEconomyTable); }
+        
+            // Itera sobre los bloques de mapa en la PÁGINA DE ECONOMY
+            economyPageHtml(".vm-stats-game").each((index, mapElement) => {
+                const mapContext = cheerio.load(economyPageHtml(mapElement).html());
+                const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
+                const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+                
+                const targetMap = mapsArray.find(m => m.mapName === mapName);
+                if (targetMap) {
+                    // Lógica para extraer las stats de economía para este mapa específico desde mapContext
+                    // Ejemplo: targetMap.economy_details = parseMapEconomyStats(mapContext);
+                    targetMap.economy_stats = { data: `Stats de economía para ${mapName} pendientes.` }; // Placeholder
+                    console.log(`Parseando economía para el mapa: ${mapName}`);
+                } else {
+                    console.log(`Mapa ${mapName} (encontrado en pág. Economy) no hallado en mapsArray original.`);
+                }
+            });
+            return { overall: overallEconomy };
+        }
 
         // Agregar los datos del jugador al array de resultados
         overviewData.push({
@@ -97,9 +151,7 @@ async function scrapeMatchDetails(matchId) {
             uri: matchUrl,
             transform: (body) => cheerio.load(body),
         });
-        // ======== INICIO DEL CÓDIGO NUEVO PARA EXTRAER Y MOSTRAR LINKS DE PESTAÑAS ========
-        // Los selectores se basan en la estructura que proporcionaste, buscando específicamente
-        // las pestañas dentro del bloque de estadísticas generales del partido (data-game-id="all").
+        // CÓDIGO PARA EXTRAER LINKS DE PERFORMANCE Y ECONOMY 
 
         const performanceTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="performance"]';
         const performanceHref = html(performanceTabSelector).attr('href');
@@ -123,7 +175,35 @@ async function scrapeMatchDetails(matchId) {
         } else {
             console.log("Link de Economy (game=all) NO encontrado.");
         }
-        // ======== FIN DEL CÓDIGO NUEVO PARA EXTRAER Y MOSTRAR LINKS DE PESTAÑAS ========
+
+        // ======== INICIO DE NUEVAS PETICIONES HTTP PARA PERFORMANCE Y ECONOMY ========
+        let performancePageHtml = null;
+        if (performanceFullUrl) {
+            try {
+                console.log(`Accediendo a URL de Performance: ${performanceFullUrl}`);
+                performancePageHtml = await request({
+                    uri: performanceFullUrl,
+                    transform: (body) => cheerio.load(body),
+                });
+                console.log("Página de Performance cargada.");
+            } catch (tabError) {
+                console.error(`Error al cargar la página de Performance ${performanceFullUrl}:`, tabError.message);
+            }
+        }
+
+        let economyPageHtml = null;
+        if (economyFullUrl) {
+            try {
+                console.log(`Accediendo a URL de Economy: ${economyFullUrl}`);
+                economyPageHtml = await request({
+                    uri: economyFullUrl,
+                    transform: (body) => cheerio.load(body),
+                });
+                console.log("Página de Economy cargada.");
+            } catch (tabError) {
+                console.error(`Error al cargar la página de Economy ${economyFullUrl}:`, tabError.message);
+            }
+        }
 
         const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
         const stage = html(".match-header-event-series").text().trim();
@@ -215,6 +295,18 @@ async function scrapeMatchDetails(matchId) {
             matchData.maps.push({ mapName, duration, teams, rounds });
         });
 
+        // ======== INICIO: LLAMADAS A LAS NUEVAS FUNCIONES DE PARSEO Y ACTUALIZACIÓN DE matchData ========
+        if (performancePageHtml) {
+            const performanceData = parsePerformancePage(performancePageHtml, matchData.maps);
+            matchData.performance_general = performanceData.overall;
+            // parsePerformancePage actualiza matchData.maps por referencia
+        }
+
+        if (economyPageHtml) {
+            const economyData = parseEconomyPage(economyPageHtml, matchData.maps);
+            matchData.economy_general = economyData.overall;
+            // parseEconomyPage actualiza matchData.maps por referencia
+        }
         return matchData;
     } catch (error) {
         console.error("Error al extraer datos del partido:", error);
