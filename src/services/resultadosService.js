@@ -502,8 +502,8 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
                 targetMap.economy_data.summary = parseEcoSummaryTable(mapEconTables.eq(0), economyPageHtml);
             }
             if (mapEconTables.length >= 2) {
-                console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa <span class="math-inline">\{mapName\}\. team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2NameGlobal}"`);
-                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1NameGlobal, team2NameGlobal);
+                console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa <span class="math-inline">\{mapName\}\. team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2Name}"`);
+                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1Name, team2Name);
             } else {
                 console.log(`[parseEconomyPage] No se encontró la segunda tabla de economía para el mapa ${mapName}`);
             }}
