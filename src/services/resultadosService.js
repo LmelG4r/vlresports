@@ -510,10 +510,30 @@ async function scrapeMatchDetails(matchId) {
         const stage = html(".match-header-event-series").text().trim();
         const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
 
-        const team2Name = html(".match-header-link.mod-1 .wf-title-med").text().trim();
-        const team1Name = html(".match-header-link.mod-2 .wf-title-med").text().trim();
-        const team1Score = html(".match-header-vs-score .match-header-vs-score-loser").text().trim();
-        const team2Score = html(".match-header-vs-score .match-header-vs-score-winner").text().trim();
+        let team1Name = '';
+let team2Name = '';
+let team1Score = '';
+let team2Score = '';
+
+// Obtener nombres de los equipos
+team1Name = $('.match-header-link.mod-1 .wf-title-med').first().text().trim();
+team2Name = $('.match-header-link.mod-2 .wf-title-med').first().text().trim();
+
+// Obtener los spans que contienen los marcadores numéricos
+// Se seleccionan todos los spans dentro de .js-spoiler y luego se filtran los que no son el separador ":"
+const scoreSpans = $('.match-header-vs-score .js-spoiler span')
+                    .filter((i, el) => $(el).text().trim() !== ':' && !isNaN(parseInt($(el).text().trim())));
+
+if (scoreSpans.length === 2) { // Asegurarse de que tenemos dos marcadores
+    team1Score = $(scoreSpans[0]).text().trim(); // Primer marcador numérico para el equipo 1
+    team2Score = $(scoreSpans[1]).text().trim(); // Segundo marcador numérico para el equipo 2
+} else {
+    // Manejar el caso donde no se encuentren los marcadores como se espera
+    console.error('No se pudieron extraer los marcadores finales correctamente.');
+    // Podrías asignar valores por defecto o lanzar un error más específico
+    team1Score = 'N/A';
+    team2Score = 'N/A';
+}
         
         const format = html(".match-header-vs-note").eq(1).text().trim();
         const mapPicksBans = html(".match-header-note").text().trim();
