@@ -662,22 +662,34 @@ const scrapeMatchDetails = async (matchId) =>{
         // Extraer mapas jugados y su información
        // Dentro de scrapeMatchDetails
 // ...
-$(".vm-stats-game").each((mapIndex, mapElement) => { // <--- Cambia '_' a 'mapIndex' y 'el' a 'mapElement' (o el nombre que prefieras)
-    const mapContext = $(mapElement); // Usa el nuevo nombre del parámetro para el elemento
+        $(".vm-stats-game").each((mapIndex, mapElement) => {
+            const mapContext = $(mapElement);
+            const gameId = mapContext.attr('data-game-id'); // Útil para logs
 
-    // ... (lógica para extraer mapName, duration, teams, rounds, played) ...
-    const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
-    let mapName = mapNameRaw.replace(/\s+PICK$/, "").trim(); // Asegúrate que mapName se define aquí
-    // ...
+            // Extraer nombre del mapa
+            const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
+            let currentMapName = mapNameRaw.replace(/\s+PICK$/, "").trim(); // 'current' para evitar conflicto si tienes otra var 'mapName'
 
-    let played = true; // Define 'played'
-    // ... (tu lógica para determinar si 'played' es true o false) ...
-    // Ejemplo:
-    if (!mapName || mapName.trim() === '') {
-        played = false;
-        mapName = `Mapa No Jugado ${mapIndex + 1}`; // Usa mapIndex aquí
-        console.log(`[scrapeMatchDetails] Mapa con game-id ${mapContext.attr('data-game-id')} detectado como no jugado (índice ${mapIndex}).`);
-    }
+            // Extraer marcadores para determinar si se jugó
+            const scoreTeam1Text = mapContext.find(".score").eq(0).text().trim();
+            const scoreTeam2Text = mapContext.find(".score").eq(1).text().trim();
+            const roundsPlayedCount = mapContext.find(".vlr-rounds .vlr-rounds-row-col").length;
+
+            let isPlayed = true; // Asumir que se jugó por defecto
+
+            if (!currentMapName || currentMapName.trim() === '') {
+                isPlayed = false;
+                currentMapName = `Mapa No Identificado ${mapIndex + 1}`; // Nombre placeholder
+                console.log(`[scrapeMatchDetails] Mapa en índice ${mapIndex} (game-id: ${gameId}) no tiene nombre, marcado como no jugado.`);
+            } else if (scoreTeam1Text === '0' && scoreTeam2Text === '0' && roundsPlayedCount === 0) {
+                // Si el marcador es 0-0 Y no hay rondas listadas, probablemente no se jugó.
+                // vlr.gg a veces muestra mapas "elegidos pero no jugados" así.
+                // O si la sección del mapa está presente pero vacía de detalles de rondas.
+                console.log(`[scrapeMatchDetails] Mapa "${currentMapName}" (game-id: ${gameId}) parece no jugado (0-0 y sin rondas).`);
+                isPlayed = false; // Puedes decidir si quieres marcarlo como no jugado o no,
+                                // ya que tu lógica de parseo de economía ya maneja bien la ausencia de datos.
+                                // Si lo marcas como 'false', puedes usarlo para saltar el parseo de performance/economy.
+            }
 
             
 
