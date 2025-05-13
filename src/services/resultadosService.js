@@ -1,7 +1,5 @@
 const request = require("request-promise");
 const cheerio = require("cheerio");
-const $ = cheerio.load(html);
-
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
 // Función para extraer los datos de Overview
@@ -444,15 +442,24 @@ function parseEconomyPage(economyPageHtml, mapsArray) { // mapsArray es matchDat
                                             // mapsArray (matchData.maps) se actualiza por referencia
 }
 // Función principal para extraer los detalles del partido
-async function scrapeMatchDetails(matchId) {
-    try {
-        const matchUrl = `${vlrgg_url}/${matchId}`;
-        console.log(`Scrapeando datos de: ${matchUrl}`);
+const scrapeMatchDetails = async (matchId) =>{
+    const matchUrl = `${vlrgg_url}/${matchId}`;
+    let htmlContent;
 
-        const html = await request({
-            uri: matchUrl,
-            transform: (body) => cheerio.load(body),
-        });
+    try {
+        console.log(`[resultadosService] Iniciando scraping para el partido: ${matchUrl}`);
+        htmlContent = await rp(matchUrl); // 1. Obtener HTML
+        console.log(`[resultadosService] HTML obtenido para ${matchId}.`);
+
+        const $ = cheerio.load(htmlContent); // 2. Cargar HTML en Cheerio y definir '$'
+        console.log(`[resultadosService] Cheerio cargado para ${matchId}.`);
+
+        // --- INICIO DE TU LÓGICA PARA EXTRAER NOMBRES Y MARCADORES DE EQUIPOS ---
+        // Ahora '$' está definido y listo para usarse.
+        let team1Name = '';
+        let team2Name = '';
+        let team1Score = '';
+        let team2Score = '';
         // CÓDIGO PARA EXTRAER LINKS DE PERFORMANCE Y ECONOMY 
 
         const performanceTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="performance"]';
@@ -511,30 +518,31 @@ async function scrapeMatchDetails(matchId) {
         const stage = html(".match-header-event-series").text().trim();
         const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
 
-        let team1Name = '';
-let team2Name = '';
-let team1Score = '';
-let team2Score = '';
 
-// Obtener nombres de los equipos
-team1Name = $('.match-header-link.mod-1 .wf-title-med').first().text().trim();
-team2Name = $('.match-header-link.mod-2 .wf-title-med').first().text().trim();
 
-// Obtener los spans que contienen los marcadores numéricos
-// Se seleccionan todos los spans dentro de .js-spoiler y luego se filtran los que no son el separador ":"
-const scoreSpans = $('.match-header-vs-score .js-spoiler span')
-                    .filter((i, el) => $(el).text().trim() !== ':' && !isNaN(parseInt($(el).text().trim())));
+        // Obtener nombres de los equipos
+        team1Name = $('.match-header-link.mod-1 .wf-title-med').first().text().trim();
+        team2Name = $('.match-header-link.mod-2 .wf-title-med').first().text().trim();
 
-if (scoreSpans.length === 2) { // Asegurarse de que tenemos dos marcadores
-    team1Score = $(scoreSpans[0]).text().trim(); // Primer marcador numérico para el equipo 1
-    team2Score = $(scoreSpans[1]).text().trim(); // Segundo marcador numérico para el equipo 2
-} else {
-    // Manejar el caso donde no se encuentren los marcadores como se espera
-    console.error('No se pudieron extraer los marcadores finales correctamente.');
-    // Podrías asignar valores por defecto o lanzar un error más específico
-    team1Score = 'N/A';
-    team2Score = 'N/A';
-}
+        console.log(`[resultadosService] Equipo 1: ${team1Name}, Equipo 2: ${team2Name}`);
+
+        // Usamos la lógica robusta para los marcadores que discutimos
+        const scoreSpans = $('.match-header-vs-score .js-spoiler span')
+                            .filter((i, el) => $(el).text().trim() !== ':' && !isNaN(parseInt($(el).text().trim())));
+
+        if (scoreSpans.length === 2) {
+            team1Score = $(scoreSpans[0]).text().trim();
+            team2Score = $(scoreSpans[1]).text().trim();
+            console.log(`[resultadosService] Marcadores: ${team1Name} ${team1Score} - ${team2Name} ${team2Score}`);
+        } else {
+            console.error(`[resultadosService] Error al extraer marcadores para ${matchId}: No se encontraron los dos spans de marcador esperados. Spans encontrados: ${scoreSpans.length}`);
+            // Es útil loguear lo que sí se encontró para depurar:
+            // $('.match-header-vs-score .js-spoiler span').each((idx, element) => {
+            //     console.log(`[resultadosService] Debug Score Span ${idx}: "${$(element).text().trim()}"`);
+            // });
+            team1Score = 'N/A'; // Valor por defecto o manejo de error
+            team2Score = 'N/A';
+        }
         
         const format = html(".match-header-vs-note").eq(1).text().trim();
         const mapPicksBans = html(".match-header-note").text().trim();
