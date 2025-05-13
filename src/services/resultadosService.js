@@ -473,11 +473,9 @@ function parseEconomyPage(economyPageHtml, mapsArray) { // mapsArray es matchDat
                 targetMap.economy_data.summary = parseEcoSummaryTable(mapEconTables.eq(0), economyPageHtml);
             }
             if (mapEconTables.length >= 2) {
-                // targetMap.rounds DEBE ser el array donde cada elemento es un objeto de ronda que queremos enriquecer.
-                // Si targetMap.rounds aún no tiene los números de ronda base, necesitaríamos otra fuente para ellos.
-                // Por ahora, asumo que targetMap.rounds ya existe y tiene objetos con al menos { roundNumber: X }
-                // La función parseEcoRoundDetailsTable modificará estos objetos por referencia.
-                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds /* Aquí pasas el array de rondas del mapa */);
+                const equipo1General = matchData.teams[0].name; // <<<--- AQUÍ ESTÁ EL PROBLEMA SI 'matchData' NO ESTÁ DEFINIDO O NO TIENE 'teams'
+                const equipo2General = matchData.teams[1].name; // <<<--- AQUÍ ESTÁ EL PROBLEMA
+                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, equipo1General, equipo2General);
             }
             console.log(`Datos de Economy procesados y añadidos para el mapa: ${mapName}`);
         } else {
