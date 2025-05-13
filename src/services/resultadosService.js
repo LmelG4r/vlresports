@@ -221,7 +221,7 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
     performancePageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
         const mapContainer = performancePageHtml(mapElement);
         const gameId = mapContainer.attr('data-game-id');
-        const targetMap = matchData.maps.find(map => map.gameId === gameId); // Assuming you add gameId to your maps array in scrapeMatchDetails
+        const targetMap = mapsArray.find(map => map.gameId === gameId);
         console.log(`[parsePerformancePage] Índice actual del mapa: ${index}, gameId: ${gameId}`);
 
         if (targetMap) {
@@ -663,8 +663,13 @@ const scrapeMatchDetails = async (matchId) =>{
 // ...
         $(".vm-stats-game").each((mapIndex, mapElement) => {
             const mapContext = $(mapElement);
-            const gameId = mapContext.attr('data-game-id'); // Útil para logs
+            const gameId = mapContext.attr('data-game-id');
 
+            // Add this check to skip the 'all' stats container
+            if (gameId === 'all') {
+                console.log(`[scrapeMatchDetails] Skipping general stats container (game-id: 'all') at index ${mapIndex}.`);
+                return; // Skips to the next iteration of the .each loop
+            }
             // Extraer nombre del mapa
             const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
             let currentMapName = mapNameRaw.replace(/\s+PICK$/, "").trim(); // 'current' para evitar conflicto si tienes otra var 'mapName'
