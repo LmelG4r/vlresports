@@ -86,35 +86,119 @@ function scrapeOverview(html, map = "general") {
 
     return overviewData;
 }
-function parsePerformancePage(performancePageHtml, mapsArray) {
-    console.log("Parseando página de Performance...");
-    let overallPerformance = { message: "Datos generales de performance pendientes." };
-    // Lógica para extraer overallPerformance de performancePageHtml (sección game=all)
-    // Ejemplo: const generalPerformanceTable = performancePageHtml('div.vm-stats[data-game-id="all"] .wf-table-inset.mod-overview'); // Ajusta el selector!
-    // if (generalPerformanceTable.length) { overallPerformance = parsePlayerStatsFromTable(generalPerformanceTable); }
+function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray puede no ser necesario aquí si solo nos enfocamos en la matriz de duelos generales
+    console.log("Parseando página de Performance para la matriz de duelos generales...");
+    
+    const overallPerformanceStats = {
+        duel_matrix: [] // Aquí almacenaremos los duelos
+    };
 
+    // 1. Localizar el contenedor de estadísticas generales del partido
+    const overallStatsContainer = performancePageHtml('div.vm-stats-game[data-game-id="all"]');
 
-    // Itera sobre los bloques de mapa en la PÁGINA DE PERFORMANCE
-    performancePageHtml(".vm-stats-game").each((index, mapElement) => {
-        // ========= CORRECCIÓN AQUÍ =========
+    if (overallStatsContainer.length === 0) {
+        console.log("Contenedor vm-stats-game[data-game-id='all'] no encontrado en la página de Performance.");
+        return { overall: overallPerformanceStats }; // Devuelve lo que tenemos (vacío)
+    }
+
+    // 2. Localizar la tabla de la matriz de duelos dentro del contenedor general
+    const duelTable = overallStatsContainer.find('table.wf-table-inset.mod-matrix');
+
+    if (duelTable.length === 0) {
+        console.log("Tabla de duelos (mod-matrix) no encontrada en game-id='all' de la página de Performance.");
+        return { overall: overallPerformanceStats };
+    }
+
+    const columnPlayers = [];
+    // 3. Extraer Jugadores de las Columnas (del encabezado de la tabla)
+    // La primera fila <tr> contiene los encabezados de columna (jugadores)
+    // Empezamos desde la segunda celda <td> (índice 1) porque la primera suele ser vacía/etiqueta
+    duelTable.find('tr').first().find('td').slice(1).each((colIndex, tdElement) => {
+        const playerCell = performancePageHtml(tdElement);
+        const teamDiv = playerCell.find('div.team');
+        // El nombre del jugador es el texto directo dentro del segundo div, antes del div.team-tag
+        const playerName = teamDiv.children('div').eq(0).contents().filter(function() { // .children('div').eq(0) es el div que contiene nombre y tag
+            return this.type === 'text';
+        }).text().trim();
+        const teamTag = teamDiv.find('div.team-tag').text().trim();
+        
+        if (playerName) { // Solo añadir si se extrajo un nombre
+            columnPlayers.push({ name: playerName, team: teamTag });
+        }
+    });
+
+    // 4. Iterar Filas de Datos (Jugadores de Fila y Estadísticas de Duelo)
+    // Saltamos la primera fila (encabezados), por eso .slice(1)
+    duelTable.find('tr').slice(1).each((rowIndex, trElement) => {
+        const rowTds = performancePageHtml(trElement).find('td');
+        
+        // Jugador de la Fila (primera celda de esta fila)
+        const rowPlayerCell = rowTds.first();
+        const rowTeamDiv = rowPlayerCell.find('div.team');
+        const rowPlayerName = rowTeamDiv.children('div').eq(0).contents().filter(function() {
+            return this.type === 'text';
+        }).text().trim();
+        const rowPlayerTeamTag = rowTeamDiv.find('div.team-tag').text().trim();
+
+        if (!rowPlayerName) { // Si no hay nombre de jugador en la fila, saltar (puede ser una fila vacía o mal formada)
+            return; 
+        }
+
+        // Duelos (celdas restantes de esta fila, a partir de la segunda)
+        // Corresponden a los duelos del rowPlayerName contra cada columnPlayer
+        rowTds.slice(1).each((colIndex, duelCellElement) => {
+            if (colIndex < columnPlayers.length) { // Asegurarse de que haya un columnPlayer correspondiente
+                const currentColumnPlayer = columnPlayers[colIndex];
+                const duelStatsDivs = performancePageHtml(duelCellElement).find('div.stats-sq');
+
+                if (duelStatsDivs.length === 3) {
+                    const killsByRowPlayer = parseInt(duelStatsDivs.eq(0).text().trim(), 10);
+                    const deathsOfRowPlayer = parseInt(duelStatsDivs.eq(1).text().trim(), 10); // (Kills by ColumnPlayer)
+                    const balanceText = duelStatsDivs.eq(2).text().trim();
+                    const balance = parseInt(balanceText.replace('+', ''), 10); // Quita el '+' para convertir a número
+
+                    overallPerformanceStats.duel_matrix.push({
+                        player_row: { name: rowPlayerName, team: rowPlayerTeamTag },
+                        player_col: { name: currentColumnPlayer.name, team: currentColumnPlayer.team },
+                        row_player_kills_col_player: killsByRowPlayer,
+                        col_player_kills_row_player: deathsOfRowPlayer,
+                        balance: balance
+                    });
+                }
+            }
+        });
+    });
+
+    // La parte de estadísticas de performance POR MAPA (si es distinta a esta matriz)
+    // la mantenemos como placeholder. Necesitarías ajustar los selectores de nombre de mapa
+    // si son diferentes en la página de Performance comparada con la de Overview.
+    performancePageHtml(".vm-stats-game[data-game-id!='all']").each((index, mapElement) => {
         const mapContext = performancePageHtml(mapElement);
-
-        const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
+        const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim(); // ESTE SELECTOR PUEDE NECESITAR AJUSTE
         const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
 
         const targetMap = mapsArray.find(m => m.mapName === mapName);
         if (targetMap) {
-            // Lógica para extraer las stats de performance para este mapa específico desde mapContext
-            // Ejemplo: targetMap.performance_details = parseMapPerformanceStats(mapContext);
-            targetMap.performance_stats = { data: `Stats de performance para ${mapName} pendientes.` }; // Placeholder
-            console.log(`Parseando performance para el mapa: ${mapName}`); // Debería ser `Placeholder de performance...`
+            targetMap.performance_stats_per_map = { data: `Stats de performance para ${mapName} pendientes.` }; // Renombrado para claridad
+            if (mapName) {
+                 console.log(`Placeholder de performance (por mapa) añadido para: ${mapName}`);
+            } else {
+                 console.log(`Placeholder de performance (por mapa) añadido, pero nombre de mapa no extraído en pág. Performance.`);
+            }
         } else {
-            console.log(`Mapa ${mapName} (encontrado en pág. Performance) no hallado en mapsArray original.`);
+            // Solo loguear si se esperaba encontrar el mapa pero no se pudo extraer su nombre,
+            // o si el nombre se extrajo pero no estaba en mapsArray (lo cual sería raro si la lógica es correcta)
+            if (mapName) { // Si se extrajo un nombre pero no se encontró el mapa
+                 console.log(`Mapa ${mapName} (de pág. Performance) no encontrado en mapsArray.`);
+            } else if (mapContext.find('.map').length > 0) { // Si hay un elemento .map pero no se pudo sacar el nombre
+                 console.log(`Bloque de mapa encontrado en pág. Performance, pero su nombre no pudo ser extraído.`);
+            }
         }
     });
 
-    return { overall: overallPerformance }; // Devuelve solo el general por ahora, los mapas se actualizan por referencia
+    return { overall: overallPerformanceStats }; // Devuelve el objeto con la matriz de duelos
 }
+
 
 function parseEconomyPage(economyPageHtml, mapsArray) {
     console.log("Parseando página de Economy...");
