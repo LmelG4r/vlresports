@@ -490,7 +490,7 @@ const scrapeMatchDetails = async (matchId) =>{
         if (performanceFullUrl) {
             try {
                 console.log(`Accediendo a URL de Performance: ${performanceFullUrl}`);
-                performancePageHtml = await request({
+                performancePageHtml = await rp({
                     uri: performanceFullUrl,
                     transform: (body) => cheerio.load(body),
                 });
@@ -504,7 +504,7 @@ const scrapeMatchDetails = async (matchId) =>{
         if (economyFullUrl) {
             try {
                 console.log(`Accediendo a URL de Economy: ${economyFullUrl}`);
-                economyPageHtml = await request({
+                economyPageHtml = await rp({
                     uri: economyFullUrl,
                     transform: (body) => cheerio.load(body),
                 });
