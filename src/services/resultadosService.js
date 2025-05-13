@@ -97,6 +97,33 @@ async function scrapeMatchDetails(matchId) {
             uri: matchUrl,
             transform: (body) => cheerio.load(body),
         });
+        // ======== INICIO DEL CÓDIGO NUEVO PARA EXTRAER Y MOSTRAR LINKS DE PESTAÑAS ========
+        // Los selectores se basan en la estructura que proporcionaste, buscando específicamente
+        // las pestañas dentro del bloque de estadísticas generales del partido (data-game-id="all").
+
+        const performanceTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="performance"]';
+        const performanceHref = html(performanceTabSelector).attr('href');
+        let performanceFullUrl = null;
+
+        if (performanceHref) {
+            // Asegurarse de que no se duplique la base si el href ya fuera absoluto (poco probable en vlr.gg)
+            performanceFullUrl = performanceHref.startsWith('http') ? performanceHref : vlrgg_url + performanceHref;
+            console.log(`Link de Performance (game=all) encontrado: ${performanceFullUrl}`);
+        } else {
+            console.log("Link de Performance (game=all) NO encontrado.");
+        }
+
+        const economyTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="economy"]';
+        const economyHref = html(economyTabSelector).attr('href');
+        let economyFullUrl = null;
+
+        if (economyHref) {
+            economyFullUrl = economyHref.startsWith('http') ? economyHref : vlrgg_url + economyHref;
+            console.log(`Link de Economy (game=all) encontrado: ${economyFullUrl}`);
+        } else {
+            console.log("Link de Economy (game=all) NO encontrado.");
+        }
+        // ======== FIN DEL CÓDIGO NUEVO PARA EXTRAER Y MOSTRAR LINKS DE PESTAÑAS ========
 
         const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
         const stage = html(".match-header-event-series").text().trim();
@@ -109,7 +136,7 @@ async function scrapeMatchDetails(matchId) {
 
         const format = html(".match-header-vs-note").eq(1).text().trim();
         const mapPicksBans = html(".match-header-note").text().trim();
-
+        
         const matchData = {
             matchId,
             tournament: tournament || "Torneo no especificado",
