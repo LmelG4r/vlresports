@@ -749,7 +749,7 @@ const scrapeMatchDetails = async (matchId) =>{
             }
             // Agregar la información del mapa y las rondas al matchData
             matchData.maps.push({
-                mapName: mapName, // mapName ya podría tener "Mapa No Jugado X"
+                mapName:currentMapName,// mapName ya podría tener "Mapa No Jugado X"
                 duration,
                 teams,
                 rounds,
