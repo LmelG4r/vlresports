@@ -505,36 +505,16 @@ async function scrapeMatchDetails(matchId) {
                 console.error(`Error al cargar la página de Economy ${economyFullUrl}:`, tabError.message);
             }
         }
-        const $ = cheerio.load(matchPageHtml);
+        
         const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
         const stage = html(".match-header-event-series").text().trim();
         const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
 
-        // Dentro de tu función scrapeMatchDetails, donde procesas la cabecera del partido:
-
-        // 1. Extraer los nombres de los equipos
-        // Equipo 1 (generalmente a la izquierda o arriba, asociado con mod-1)
-        const team1Name = $('a.match-header-link.mod-1 .match-header-link-name .wf-title-med').first().text().trim();
-        // Equipo 2 (generalmente a la derecha o abajo, asociado con mod-2)
-        const team2Name = $('a.match-header-link.mod-2 .match-header-link-name .wf-title-med').first().text().trim();
-
-        // 2. Extraer los puntajes posicionalmente
-        const scoreElements = $('.match-header-vs-score .js-spoiler span').not('.match-header-vs-score-colon');
-        const team1Score = scoreElements.eq(0).text().trim(); // El primer puntaje que aparece es para el Equipo 1 (mod-1)
-        const team2Score = scoreElements.eq(1).text().trim(); // El segundo puntaje que aparece es para el Equipo 2 (mod-2)
-
-        // 3. Construir el objeto de equipos con la asignación correcta
-        // Es buena práctica guardarlos en un orden consistente, por ejemplo, siempre el equipo mod-1 primero.
-        const teamsData = [];
-        if (team1Name && team1Score) { // Asegurarse de que los datos existen
-        teamsData.push({ name: team1Name, score: team1Score });
-        }
-        if (team2Name && team2Score) { // Asegurarse de que los datos existen
-        teamsData.push({ name: team2Name, score: team2Score });
-        }
+        const team2Name = html(".match-header-link.mod-1 .wf-title-med").text().trim();
+        const team1Name = html(".match-header-link.mod-2 .wf-title-med").text().trim();
+        const team1Score = html(".match-header-vs-score .match-header-vs-score-loser").text().trim();
+        const team2Score = html(".match-header-vs-score .match-header-vs-score-winner").text().trim();
         
-        
-
         const format = html(".match-header-vs-note").eq(1).text().trim();
         const mapPicksBans = html(".match-header-note").text().trim();
         
