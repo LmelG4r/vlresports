@@ -685,7 +685,7 @@ const scrapeMatchDetails = async (matchId) =>{
                 }
             }
 
-            matchData.maps.push({ mapName: mapName || `Mapa No Jugado ${index + 1}`, duration, teams, rounds, played }); // Añade 'played'
+            
 
             const duration = mapContext.find(".map-duration").text().trim();
 
@@ -741,7 +741,7 @@ const scrapeMatchDetails = async (matchId) =>{
             });
         
             // Agregar la información del mapa y las rondas al matchData
-            matchData.maps.push({ mapName, duration, teams, rounds });
+            matchData.maps.push({ mapName: mapName || `Mapa No Jugado ${index + 1}`, duration, teams, rounds, played }); // Añade 'played'
         });
 
         // ======== INICIO: LLAMADAS A LAS NUEVAS FUNCIONES DE PARSEO Y ACTUALIZACIÓN DE matchData ========
