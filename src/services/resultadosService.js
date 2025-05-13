@@ -534,13 +534,12 @@ async function scrapeMatchDetails(matchId) {
             tournament: tournament || "Torneo no especificado",
             stage: stage || "Etapa no especificada",
             date: date || "Fecha no especificada",
-            teams : teamsData || "Equipos no especificados",
             format: format || "Formato no especificado",
             mapPicksBans: mapPicksBans || "Estadisticas de todos los mapas",
             overview_general: scrapeOverview(html), // Overview general
             maps: [],
         };
-
+        matchData.teams = teamsData;
         // Extraer mapas jugados y su información
         html(".vm-stats-game").each((_, el) => {
             const mapContext = html(el);
