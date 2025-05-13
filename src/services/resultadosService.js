@@ -74,60 +74,6 @@ function scrapeOverview(html, map = "general") {
                 defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
             },
         };
-        
-        function parsePerformancePage(performancePageHtml, mapsArray) {
-            console.log("Parseando página de Performance...");
-            let overallPerformance = { message: "Datos generales de performance pendientes." };
-            // Lógica para extraer overallPerformance de performancePageHtml (sección game=all)
-            // Ejemplo: const generalPerformanceTable = performancePageHtml('div.vm-stats[data-game-id="all"] .wf-table-inset.mod-overview'); // Ajusta el selector!
-            // if (generalPerformanceTable.length) { overallPerformance = parsePlayerStatsFromTable(generalPerformanceTable); }
-        
-        
-            // Itera sobre los bloques de mapa en la PÁGINA DE PERFORMANCE
-            performancePageHtml(".vm-stats-game").each((index, mapElement) => {
-                const mapContext = cheerio.load(performancePageHtml(mapElement).html()); // Carga el contexto del elemento mapa
-                const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
-                const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
-        
-                const targetMap = mapsArray.find(m => m.mapName === mapName);
-                if (targetMap) {
-                    // Lógica para extraer las stats de performance para este mapa específico desde mapContext
-                    // Ejemplo: targetMap.performance_details = parseMapPerformanceStats(mapContext);
-                    targetMap.performance_stats = { data: `Stats de performance para ${mapName} pendientes.` }; // Placeholder
-                    console.log(`Parseando performance para el mapa: ${mapName}`);
-                } else {
-                    console.log(`Mapa ${mapName} (encontrado en pág. Performance) no hallado en mapsArray original.`);
-                }
-            });
-        
-            return { overall: overallPerformance }; // Devuelve solo el general por ahora, los mapas se actualizan por referencia
-        }
-        
-        function parseEconomyPage(economyPageHtml, mapsArray) {
-            console.log("Parseando página de Economy...");
-            let overallEconomy = { message: "Datos generales de economía pendientes." };
-            // Lógica para extraer overallEconomy de economyPageHtml (sección game=all)
-            // Ejemplo: const generalEconomyTable = economyPageHtml('div.vm-stats[data-game-id="all"] .MODULO_DE_ECONOMIA'); // Ajusta el selector!
-            // if (generalEconomyTable.length) { overallEconomy = parseEconomyStatsFromTable(generalEconomyTable); }
-        
-            // Itera sobre los bloques de mapa en la PÁGINA DE ECONOMY
-            economyPageHtml(".vm-stats-game").each((index, mapElement) => {
-                const mapContext = cheerio.load(economyPageHtml(mapElement).html());
-                const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
-                const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
-                
-                const targetMap = mapsArray.find(m => m.mapName === mapName);
-                if (targetMap) {
-                    // Lógica para extraer las stats de economía para este mapa específico desde mapContext
-                    // Ejemplo: targetMap.economy_details = parseMapEconomyStats(mapContext);
-                    targetMap.economy_stats = { data: `Stats de economía para ${mapName} pendientes.` }; // Placeholder
-                    console.log(`Parseando economía para el mapa: ${mapName}`);
-                } else {
-                    console.log(`Mapa ${mapName} (encontrado en pág. Economy) no hallado en mapsArray original.`);
-                }
-            });
-            return { overall: overallEconomy };
-        }
 
         // Agregar los datos del jugador al array de resultados
         overviewData.push({
@@ -139,6 +85,59 @@ function scrapeOverview(html, map = "general") {
     });
 
     return overviewData;
+}
+function parsePerformancePage(performancePageHtml, mapsArray) {
+    console.log("Parseando página de Performance...");
+    let overallPerformance = { message: "Datos generales de performance pendientes." };
+    // Lógica para extraer overallPerformance de performancePageHtml (sección game=all)
+    // Ejemplo: const generalPerformanceTable = performancePageHtml('div.vm-stats[data-game-id="all"] .wf-table-inset.mod-overview'); // Ajusta el selector!
+    // if (generalPerformanceTable.length) { overallPerformance = parsePlayerStatsFromTable(generalPerformanceTable); }
+
+
+    // Itera sobre los bloques de mapa en la PÁGINA DE PERFORMANCE
+    performancePageHtml(".vm-stats-game").each((index, mapElement) => {
+        const mapContext = cheerio.load(performancePageHtml(mapElement).html()); // Carga el contexto del elemento mapa
+        const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
+        const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+
+        const targetMap = mapsArray.find(m => m.mapName === mapName);
+        if (targetMap) {
+            // Lógica para extraer las stats de performance para este mapa específico desde mapContext
+            // Ejemplo: targetMap.performance_details = parseMapPerformanceStats(mapContext);
+            targetMap.performance_stats = { data: `Stats de performance para ${mapName} pendientes.` }; // Placeholder
+            console.log(`Parseando performance para el mapa: ${mapName}`); // Debería ser `Placeholder de performance...`
+        } else {
+            console.log(`Mapa ${mapName} (encontrado en pág. Performance) no hallado en mapsArray original.`);
+        }
+    });
+
+    return { overall: overallPerformance }; // Devuelve solo el general por ahora, los mapas se actualizan por referencia
+}
+
+function parseEconomyPage(economyPageHtml, mapsArray) {
+    console.log("Parseando página de Economy...");
+    let overallEconomy = { message: "Datos generales de economía pendientes." };
+    // Lógica para extraer overallEconomy de economyPageHtml (sección game=all)
+    // Ejemplo: const generalEconomyTable = economyPageHtml('div.vm-stats[data-game-id="all"] .MODULO_DE_ECONOMIA'); // Ajusta el selector!
+    // if (generalEconomyTable.length) { overallEconomy = parseEconomyStatsFromTable(generalEconomyTable); }
+
+    // Itera sobre los bloques de mapa en la PÁGINA DE ECONOMY
+    economyPageHtml(".vm-stats-game").each((index, mapElement) => {
+        const mapContext = cheerio.load(economyPageHtml(mapElement).html());
+        const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
+        const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+        
+        const targetMap = mapsArray.find(m => m.mapName === mapName);
+        if (targetMap) {
+            // Lógica para extraer las stats de economía para este mapa específico desde mapContext
+            // Ejemplo: targetMap.economy_details = parseMapEconomyStats(mapContext);
+            targetMap.economy_stats = { data: `Stats de economía para ${mapName} pendientes.` }; // Placeholder
+            console.log(`Parseando economía para el mapa: ${mapName}`); // Debería ser `Placeholder de economía...`
+        } else {
+            console.log(`Mapa ${mapName} (encontrado en pág. Economy) no hallado en mapsArray original.`);
+        }
+    });
+    return { overall: overallEconomy };
 }
 
 // Función principal para extraer los detalles del partido
@@ -312,4 +311,4 @@ async function scrapeMatchDetails(matchId) {
         console.error("Error al extraer datos del partido:", error);
     }
 }
-module.exports = { scrapeMatchDetails };
+module.exports = { scrapeMatchDetails /*, scrapeOverview si la exportas también */ };
