@@ -510,10 +510,21 @@ async function scrapeMatchDetails(matchId) {
         const stage = html(".match-header-event-series").text().trim();
         const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
 
-        const team2Name = html(".match-header-link.mod-1 .wf-title-med").text().trim();
-        const team1Name = html(".match-header-link.mod-2 .wf-title-med").text().trim();
-        const team1Score = html(".match-header-vs-score .match-header-vs-score-loser").text().trim();
-        const team2Score = html(".match-header-vs-score .match-header-vs-score-winner").text().trim();
+        const teamsData = [];
+        const teamBlockElements = overviewHtml('.match-header-vs .match-header-vs-team'); // Selector para cada bloque de equipo
+
+        teamBlockElements.each((index, element) => {
+            const teamElement = overviewHtml(element); // Envuelve el elemento actual con cheerio para buscar dentro de él
+            
+            const teamName = teamElement.find('.match-header-vs-team-name .wf-title-med').text().trim();
+            const score = teamElement.find('.js-spoiler .score').text().trim();
+            
+            if (teamName) { // Asegurarse de que se encontró un nombre de equipo
+                teamsData.push({ name: teamName, score: score });
+            }
+        });
+        
+        matchData.teams = teamsData; 
 
         const format = html(".match-header-vs-note").eq(1).text().trim();
         const mapPicksBans = html(".match-header-note").text().trim();
