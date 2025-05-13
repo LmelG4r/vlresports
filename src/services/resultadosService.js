@@ -303,6 +303,10 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
 }
 
 function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, equipo1NombreCanonico, equipo2NombreCanonico) {
+
+    console.log(`[parseEcoRoundDetailsTable] Recibido equipo1NombreCanonico: "${equipo1NombreCanonico}", Tipo: ${typeof equipo1NombreCanonico}`);
+    console.log(`[parseEcoRoundDetailsTable] Recibido equipo2NombreCanonico: "${equipo2NombreCanonico}", Tipo: ${typeof equipo2NombreCanonico}`);
+
     if (!equipo1NombreCanonico || !equipo2NombreCanonico) {
         console.error("[parseEcoRoundDetailsTable] Error: Nombres de equipo canónicos no proporcionados o son undefined.");
         console.error(`equipo1NombreCanonico: ${equipo1NombreCanonico}, equipo2NombreCanonico: ${equipo2NombreCanonico}`);
@@ -340,6 +344,18 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
         // roundIndexInHeader es 0 para la primera ronda, 1 para la segunda, etc.
         // Las celdas de datos de ronda empiezan después de la celda del nombre del equipo (índice 1 en la fila)
         const dataCellIndex = roundIndexInHeader + 1;
+
+        const dataRows = tableCheerio.find('tr').filter((i, rowEl) => {
+            return pageCheerioInstance(rowEl).find('td:first-child div.team').length > 0;
+        });
+        
+        if (dataRows.length < 2) {
+            console.error("[parseEcoRoundDetailsTable] No se encontraron suficientes filas de datos de equipo para extraer team1Row/team2Row.");
+            return; // Salir si no podemos obtener las filas
+        }
+        
+        const team1Row = pageCheerioInstance(dataRows.eq(0));
+        const team2Row = pageCheerioInstance(dataRows.eq(1));
 
         const team1RoundCellElement = team1Row.find('td').eq(dataCellIndex);
         const team2RoundCellElement = team2Row.find('td').eq(dataCellIndex);
@@ -417,6 +433,9 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
 // --- FIN: Funciones Auxiliares ---
 function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
     console.log("Parseando página de Economy...");
+    console.log(`[parseEconomyPage] Recibido team1NameGlobal: "${team1NameGlobal}", Tipo: ${typeof team1NameGlobal}`);
+    console.log(`[parseEconomyPage] Recibido team2NameGlobal: "${team2NameGlobal}", Tipo: ${typeof team2NameGlobal}`);
+    
     
     const overallEconomyResult = { // Para las estadísticas generales del partido
         summary: [], // Para la primera tabla .mod-econ
@@ -433,10 +452,16 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
             console.log("Procesando tabla de resumen de economía general...");
             overallEconomyResult.summary = parseEcoSummaryTable(econTables.eq(0), economyPageHtml);
         }
+        // En la sección de data-game-id="all"
         if (econTables.length >= 2) {
             console.log("Procesando tabla de detalles de economía por ronda general...");
-            // Para la tabla general, no tenemos un mapRoundsArrayToUpdate preexistente, así que recogerá los datos.
-            overallEconomyResult.round_details = parseEcoRoundDetailsTable(econTables.eq(1), economyPageHtml, null); 
+            overallEconomyResult.round_details = parseEcoRoundDetailsTable(
+                econTables.eq(1),
+                economyPageHtml,
+                null, // mapRoundsArrayToUpdate
+                team1Name, // El parámetro equipo1NombreGlobal de parseEconomyPage
+                team2Name  // El parámetro equipo2NombreGlobal de parseEconomyPage
+            );
         }
     } else {
         console.log("Contenedor de estadísticas generales (vm-stats-game[data-game-id='all']) no encontrado en la página de Economy.");
@@ -447,7 +472,9 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
     economyPageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
         const mapContainer = economyPageHtml(mapElement); 
         const gameId = mapContainer.attr('data-game-id');
-
+        // Dentro del .each de los mapas en parseEconomyPage
+        console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable (mapa <span class="math-inline">\{mapName\}\) \- team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2NameGlobal}"`);
+        parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1NameGlobal, team2NameGlobal);
         if (index < mapsArray.length) {
             const targetMap = mapsArray[index]; 
             const mapName = targetMap.mapName;  
