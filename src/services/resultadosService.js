@@ -473,7 +473,7 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
                 targetMap.economy_data.summary = parseEcoSummaryTable(mapEconTables.eq(0), economyPageHtml);
             }
             if (mapEconTables.length >= 2) {
-                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, equipo1General, equipo2General);
+                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1Name, team2Name);
             }
             console.log(`Datos de Economy procesados y añadidos para el mapa: ${mapName}`);
         } else {
