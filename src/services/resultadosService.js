@@ -473,8 +473,8 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
         const mapContainer = economyPageHtml(mapElement); 
         const gameId = mapContainer.attr('data-game-id');
         // Dentro del .each de los mapas en parseEconomyPage
-        console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable (mapa <span class="math-inline">\{mapName\}\) \- team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2NameGlobal}"`);
-        parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1NameGlobal, team2NameGlobal);
+        console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable (mapa <span class="math-inline">\{mapName\}\) \- team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2Name}"`);
+        parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1Name, team2Name);
         if (index < mapsArray.length) {
             const targetMap = mapsArray[index]; 
             const mapName = targetMap.mapName;  
