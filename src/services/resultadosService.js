@@ -223,7 +223,7 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
         // --- LÓGICA DE CORRELACIÓN USANDO EL ORDEN/ÍNDICE ---
         if (index < mapsArray.length) {
             const targetMap = mapsArray[index]; // Obtenemos el mapa de nuestro array por su índice
-            if (!targetMap.played && targetMap.currentMapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
+            if (!targetMap.played && targetMap.MapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
                 console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.currentMapName}`);
                 return; // Saltar al siguiente mapa
             }
