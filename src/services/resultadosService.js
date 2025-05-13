@@ -534,12 +534,16 @@ async function scrapeMatchDetails(matchId) {
             tournament: tournament || "Torneo no especificado",
             stage: stage || "Etapa no especificada",
             date: date || "Fecha no especificada",
+            teams: [
+                { name: team1Name || "Equipo 1 no especificado", score: team1Score || "0" },
+                { name: team2Name || "Equipo 2 no especificado", score: team2Score || "0" },
+            ],
             format: format || "Formato no especificado",
             mapPicksBans: mapPicksBans || "Estadisticas de todos los mapas",
             overview_general: scrapeOverview(html), // Overview general
             maps: [],
         };
-        matchData.teams = teamsData;
+
         // Extraer mapas jugados y su información
         html(".vm-stats-game").each((_, el) => {
             const mapContext = html(el);
