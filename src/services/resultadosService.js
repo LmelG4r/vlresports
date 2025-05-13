@@ -302,30 +302,21 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
     return summary;
 }
 
-function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, team1Name, team2Name) {
-    const dataRows = tableCheerio.find('tr').filter((i, rowEl) => {
-        return pageCheerioInstance(rowEl).find('td:first-child div.team').length > 0;
-    });
-
-    if (dataRows.length < 2) {
-        console.error("[parseEcoRoundDetailsTable] No se encontraron suficientes filas de datos de equipo.");
-        return;
+function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, equipo1NombreCanonico, equipo2NombreCanonico) {
+    if (!equipo1NombreCanonico || !equipo2NombreCanonico) {
+        console.error("[parseEcoRoundDetailsTable] Error: Nombres de equipo canónicos no proporcionados o son undefined.");
+        console.error(`equipo1NombreCanonico: ${equipo1NombreCanonico}, equipo2NombreCanonico: ${equipo2NombreCanonico}`);
+        return; 
     }
 
-    const team1Row = pageCheerioInstance(dataRows.eq(0));
-    const team2Row = pageCheerioInstance(dataRows.eq(1));
+    const currentMapTeam1Name = equipo1NombreCanonico;
+    const currentMapTeam2Name = equipo2NombreCanonico;
 
-    const team1NameFromTable = team1Row.find('td:first-child div.team').text().replace(/\s+/g, ' ').trim();
-    const team2NameFromTable = team2Row.find('td:first-child div.team').text().replace(/\s+/g, ' ').trim();
-
-    // Determinar cuál nombre canónico corresponde a team1NameFromTable y team2NameFromTable
-    // Esto es importante si el orden en la tabla no siempre coincide con tu equipo1/equipo2 global.
-    // Por simplicidad ahora, asumiré que team1NameCanonico es el de team1Row.
-    const currentMapTeam1Name = team1Name;
-    const currentMapTeam2Name = team2Name;
-
-    const cleanTeam1Key = currentMapTeam1Name.replace(/\s+/g, '').toLowerCase();
-    const cleanTeam2Key = currentMapTeam2Name.replace(/\s+/g, '').toLowerCase();
+    // Ahora currentMapTeam1Name y currentMapTeam2Name tendrán los valores de team1Name y team2Name
+    // que definiste en el scope superior y pasaste a través de las funciones.
+    const cleanTeam1Key = currentMapTeam1Name.replace(/\s+/g, '').toLowerCase(); // Esto ya no debería fallar
+    const cleanTeam2Key = currentMapTeam2Name.replace(/\s+/g, '').toLowerCase(); // Esto ya no debería fallar
+    
 
     // Extraer los números de ronda de la fila de cabecera de la tabla
     // Esta fila suele ser la primera <tr> dentro de <table> o la <tr> justo antes de las dataRows.
