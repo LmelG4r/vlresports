@@ -506,12 +506,6 @@ async function scrapeMatchDetails(matchId) {
             }
         }
 
-        if (economyPageHtml) {
-            const econData = parseEconomyPage(economyPageHtml, matchData.maps); // Llama a la nueva función
-            matchData.economy_general = econData.overall; // Guarda los datos generales de economía
-            // matchData.maps ya habrá sido actualizado por referencia por parseEconomyPage
-        }
-
         const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
         const stage = html(".match-header-event-series").text().trim();
         const date = html(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
@@ -610,10 +604,11 @@ async function scrapeMatchDetails(matchId) {
         }
 
         if (economyPageHtml) {
-            const economyData = parseEconomyPage(economyPageHtml, matchData.maps);
-            matchData.economy_general = economyData.overall;
-            // parseEconomyPage actualiza matchData.maps por referencia
+            const econData = parseEconomyPage(economyPageHtml, matchData.maps); // Llama a la nueva función
+            matchData.economy_general = econData.overall; // Guarda los datos generales de economía
+            // matchData.maps ya habrá sido actualizado por referencia por parseEconomyPage
         }
+
         return matchData;
     } catch (error) {
         console.error("Error al extraer datos del partido:", error);
