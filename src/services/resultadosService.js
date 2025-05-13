@@ -216,7 +216,10 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
 
     // 2. PROCESAR SECCIONES DE ESTADÍSTICAS POR MAPA (data-game-id != 'all')
     console.log("Buscando secciones de estadísticas por mapa en la página de Performance...");
+    console.log(`[parsePerformancePage] Longitud de mapsArray: ${mapsArray.length}`);
+
     performancePageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
+        console.log(`[parsePerformancePage] Índice actual del mapa: ${index}`);
         const mapContainer = performancePageHtml(mapElement); // Contenedor del mapa actual
         const gameId = mapContainer.attr('data-game-id'); // Útil para depurar
 
@@ -224,6 +227,7 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
         if (index < mapsArray.length) {
             const targetMap = mapsArray[index]; // Obtenemos el mapa de nuestro array por su índice
             if (!targetMap.played && targetMap.MapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
+                console.log(`[parsePerformancePage] Valor de targetMap en índice ${index}:`, targetMap);
                 console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.currentMapName}`);
                 return; // Saltar al siguiente mapa
             }
