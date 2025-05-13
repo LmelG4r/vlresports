@@ -219,11 +219,10 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
     console.log(`[parsePerformancePage] Longitud de mapsArray: ${mapsArray.length}`);
 
     performancePageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
-        console.log(`[parsePerformancePage] Índice actual del mapa: ${index}, gameId: ${gameId}`);
         const mapContainer = performancePageHtml(mapElement);
         const gameId = mapContainer.attr('data-game-id');
         const targetMap = matchData.maps.find(map => map.gameId === gameId); // Assuming you add gameId to your maps array in scrapeMatchDetails
-
+        console.log(`[parsePerformancePage] Índice actual del mapa: ${index}, gameId: ${gameId}`);
 
         if (targetMap) {
             if (!targetMap.played && targetMap.mapName && targetMap.mapName.includes("No Jugado")) {
