@@ -370,9 +370,21 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
 
         const team1BankText = team1RoundCell.find('div.bank').text().trim();
         const team2BankText = team2RoundCell.find('div.bank').text().trim();
-
-        const team1Bank = parseInt(team1BankText.replace(/[^0-9]/g, ''), 10) || 0;
-        const team2Bank = parseInt(team2BankText.replace(/[^0-9]/g, ''), 10) || 0;
+        
+        const parseBankValue = (bankText) => {
+            if (!bankText) return 0;
+            const text = bankText.toLowerCase();
+            let value;
+            if (text.includes('k')) {
+                value = parseFloat(text.replace('k', '')) * 1000;
+            } else {
+                value = parseInt(text.replace(/[^0-9]/g, ''), 10);
+            }
+            return isNaN(value) ? 0 : value; // Devolver 0 si el parseo falla
+        };
+        
+        const team1Bank = parseBankValue(team1BankText);
+        const team2Bank = parseBankValue(team2BankText);
 
         const team1BuySq = team1RoundCell.find('div.rnd-sq');
         const team2BuySq = team2RoundCell.find('div.rnd-sq');
