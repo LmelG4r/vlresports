@@ -1,5 +1,6 @@
 const request = require("request-promise");
 const cheerio = require("cheerio");
+const $ = cheerio.load(html);
 
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
