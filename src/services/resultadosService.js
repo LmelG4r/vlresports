@@ -705,6 +705,7 @@ const scrapeMatchDetails = async (matchId) =>{
                     score: mapContext.find(".score").eq(1).text().trim() || "0",
                 },
             ];const rounds = [];
+            if (isPlayed) {
             mapContext.find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
                 const roundElement = $(roundEl); // Es buena práctica guardar el elemento jQuery/Cheerio
                 const team1Sq = roundElement.find(".rnd-sq").eq(0);
@@ -743,9 +744,9 @@ const scrapeMatchDetails = async (matchId) =>{
                     winner: winningTeam,
                     result: result,
                     method: method || "no-time",
-                });
             });
-        
+         });
+            }
             // Agregar la información del mapa y las rondas al matchData
             matchData.maps.push({
                 mapName: mapName, // mapName ya podría tener "Mapa No Jugado X"
@@ -753,7 +754,8 @@ const scrapeMatchDetails = async (matchId) =>{
                 teams,
                 rounds,
                 played // Asegúrate que 'played' esté definida antes de este punto
-            })
+            });
+  
         });
 
         // ======== INICIO: LLAMADAS A LAS NUEVAS FUNCIONES DE PARSEO Y ACTUALIZACIÓN DE matchData ========
@@ -774,7 +776,7 @@ const scrapeMatchDetails = async (matchId) =>{
         }
 
         return matchData;
-    } catch (error) {
+    } catch(error) {
         console.error("Error al extraer datos del partido:", error);
     }
 }
