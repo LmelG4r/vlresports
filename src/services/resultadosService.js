@@ -142,116 +142,128 @@ function parseSingleDuelMatrixTable(tableCheerioElement, pageCheerioInstance) {
 }
 // --- FIN: Función auxiliar ---
 
+// --- INICIO: Función auxiliar para parsear UNA SOLA tabla de stats avanzadas ---
+function parseSingleAdvStatsTable(advStatsTableCheerio, pageCheerioInstance) {
+    const advancedPlayerStatsList = [];
+    // Saltamos la primera fila de encabezados (tr con th)
+    advStatsTableCheerio.find('tr').slice(1).each((rowIndex, trElement) => {
+        const playerCells = pageCheerioInstance(trElement).find('td');
+        const playerData = {};
 
-function parsePerformancePage(performancePageHtml, mapsArray) {
+        // Celda 0: Información del Jugador
+        const playerInfoDiv = pageCheerioInstance(playerCells.eq(0)).find('div.team');
+        playerData.playerName = playerInfoDiv.children('div').eq(0).contents().filter(function() {
+            return this.type === 'text';
+        }).text().trim();
+        playerData.teamTag = playerInfoDiv.find('div.team-tag').text().trim();
+
+        // Función auxiliar interna para obtener valor numérico
+        const getStat = (cellIndex) => {
+            const text = pageCheerioInstance(playerCells.eq(cellIndex)).find('div.stats-sq').text().trim();
+            return text === '' || text === '-' ? 0 : parseInt(text, 10); // Considera '-' como 0 también
+        };
+
+        // Multikills (índices de celda 2 al 5)
+        playerData.multikills = {
+            "2K": getStat(2), "3K": getStat(3), "4K": getStat(4), "5K": getStat(5)
+        };
+        // Clutches (índices de celda 6 al 10)
+        playerData.clutches = {
+            "1v1": getStat(6), "1v2": getStat(7), "1v3": getStat(8), "1v4": getStat(9), "1v5": getStat(10)
+        };
+        // Plants y Defuses (índices de celda 12 y 13)
+        playerData.plants = getStat(12);
+        playerData.defuses = getStat(13);
+        
+        if (playerData.playerName) {
+            advancedPlayerStatsList.push(playerData);
+        }
+    });
+    return advancedPlayerStatsList;
+}
+// --- FIN: Función auxiliar ---
+function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es matchData.maps
     console.log("Parseando página de Performance...");
     
-    // El objeto que esta función devuelve. Ya tiene las matrices de duelos.
-    const overallPerformanceData = {
+    const overallPerformanceResult = { // Para las estadísticas generales del partido
         general_duel_matrix: [],
         first_kill_duel_matrix: [],
         operator_duel_matrix: [],
-        advanced_player_stats: [] // NUEVO: Array para las estadísticas avanzadas por jugador
+        advanced_player_stats: [] 
     };
 
+    // 1. PROCESAR SECCIÓN DE ESTADÍSTICAS GENERALES (data-game-id="all")
     const overallStatsContainer = performancePageHtml('div.vm-stats-game[data-game-id="all"]');
-
     if (overallStatsContainer.length > 0) {
-        // --- LÓGICA EXISTENTE PARA MATRICES DE DUELOS ---
-        const allDuelMatrixTables = overallStatsContainer.find('table.wf-table-inset.mod-matrix');
-        console.log(`Se encontraron ${allDuelMatrixTables.length} tabla(s) de duelos en Performance (game=all).`);
-        if (allDuelMatrixTables.length >= 1) {
-            console.log("Procesando Matriz de Duelos Generales...");
-            overallPerformanceData.general_duel_matrix = parseSingleDuelMatrixTable(performancePageHtml(allDuelMatrixTables.eq(0)), performancePageHtml);
+        console.log("Procesando estadísticas generales de Performance (game=all)...");
+        const overallDuelMatrixTables = overallStatsContainer.find('table.wf-table-inset.mod-matrix');
+        if (overallDuelMatrixTables.length >= 1) {
+            overallPerformanceResult.general_duel_matrix = parseSingleDuelMatrixTable(overallDuelMatrixTables.eq(0), performancePageHtml);
         }
-        if (allDuelMatrixTables.length >= 2) {
-            console.log("Procesando Matriz de Duelos de First Kills...");
-            overallPerformanceData.first_kill_duel_matrix = parseSingleDuelMatrixTable(performancePageHtml(allDuelMatrixTables.eq(1)), performancePageHtml);
+        if (overallDuelMatrixTables.length >= 2) {
+            overallPerformanceResult.first_kill_duel_matrix = parseSingleDuelMatrixTable(overallDuelMatrixTables.eq(1), performancePageHtml);
         }
-        if (allDuelMatrixTables.length >= 3) {
-            console.log("Procesando Matriz de Duelos de Operator Kills...");
-            overallPerformanceData.operator_duel_matrix = parseSingleDuelMatrixTable(performancePageHtml(allDuelMatrixTables.eq(2)), performancePageHtml);
+        if (overallDuelMatrixTables.length >= 3) {
+            overallPerformanceResult.operator_duel_matrix = parseSingleDuelMatrixTable(overallDuelMatrixTables.eq(2), performancePageHtml);
         }
-        // --- FIN DE LÓGICA EXISTENTE PARA MATRICES DE DUELOS ---
 
-
-        // ========== INICIO: NUEVA LÓGICA PARA LA TABLA "mod-adv-stats" (Multikills, Clutches, etc.) ==========
-        const advStatsTable = overallStatsContainer.find('table.wf-table-inset.mod-adv-stats');
-
-        if (advStatsTable.length > 0) {
-            console.log("Procesando tabla de estadísticas avanzadas (multikills, clutches)...");
-            
-            // Iteramos sobre cada fila de datos (<tr>), saltando la primera fila de encabezados (<th>)
-            advStatsTable.find('tr').slice(1).each((rowIndex, trElement) => {
-                const playerCells = performancePageHtml(trElement).find('td');
-                const playerData = {};
-
-                // Celda 0: Información del Jugador (nombre, equipo)
-                const playerInfoDiv = performancePageHtml(playerCells.eq(0)).find('div.team');
-                playerData.playerName = playerInfoDiv.children('div').eq(0).contents().filter(function() {
-                    return this.type === 'text';
-                }).text().trim();
-                playerData.teamTag = playerInfoDiv.find('div.team-tag').text().trim();
-
-                // Celda 1: Agente (lo extraemos por si acaso, pero no lo incluiremos en el JSON final según tu indicación)
-                // const agentImgSrc = performancePageHtml(playerCells.eq(1)).find('div.stats-sq img').attr('src');
-                // if (agentImgSrc) { /* ... lógica para parsear nombre del agente ... */ }
-
-                // Función auxiliar para obtener el valor numérico de una celda de estadística
-                const getStat = (cellIndex) => {
-                    const text = performancePageHtml(playerCells.eq(cellIndex)).find('div.stats-sq').text().trim();
-                    return text === '' ? 0 : parseInt(text, 10); // Si está vacío, es 0
-                };
-
-                // Extracción de estadísticas según el orden de las columnas:
-                // 2K, 3K, 4K, 5K (índices de celda 2, 3, 4, 5)
-                playerData.multikills = {
-                    "2K": getStat(2),
-                    "3K": getStat(3),
-                    "4K": getStat(4),
-                    "5K": getStat(5)
-                };
-
-                // 1v1, 1v2, 1v3, 1v4, 1v5 (índices de celda 6, 7, 8, 9, 10)
-                playerData.clutches = {
-                    "1v1": getStat(6),
-                    "1v2": getStat(7),
-                    "1v3": getStat(8),
-                    "1v4": getStat(9),
-                    "1v5": getStat(10)
-                };
-                
-                // ECON (índice de celda 11) - Ignorado según tu indicación
-                // const econRating = getStat(11);
-
-                // PL (Plants) (índice de celda 12)
-                playerData.plants = getStat(12);
-                // DE (Defuses) (índice de celda 13)
-                playerData.defuses = getStat(13);
-
-                // Solo añadir si tenemos un nombre de jugador (para evitar filas vacías o malformadas)
-                if (playerData.playerName) {
-                    overallPerformanceData.advanced_player_stats.push(playerData);
-                }
-            });
-        } else {
-            console.log("Tabla 'mod-adv-stats' (multikills, clutches) no encontrada en game-id='all'.");
+        const overallAdvStatsTable = overallStatsContainer.find('table.wf-table-inset.mod-adv-stats');
+        if (overallAdvStatsTable.length > 0) {
+            overallPerformanceResult.advanced_player_stats = parseSingleAdvStatsTable(overallAdvStatsTable, performancePageHtml);
         }
-        // ========== FIN: NUEVA LÓGICA PARA LA TABLA "mod-adv-stats" ==========
-
     } else {
-        console.log("Contenedor vm-stats-game[data-game-id='all'] no encontrado en la página de Performance.");
+        console.log("Contenedor de estadísticas generales (vm-stats-game[data-game-id='all']) no encontrado en la página de Performance.");
     }
 
-    // La parte de estadísticas de performance POR MAPA (si es distinta a estas matrices)
-    // sigue siendo un placeholder.
-    performancePageHtml(".vm-stats-game[data-game-id!='all']").each((index, mapElement) => {
-        // ... (lógica placeholder existente para stats de performance por mapa) ...
+    // 2. PROCESAR SECCIONES DE ESTADÍSTICAS POR MAPA (data-game-id != 'all')
+    console.log("Buscando secciones de estadísticas por mapa en la página de Performance...");
+    performancePageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
+        const mapContainer = performancePageHtml(mapElement); // Contenedor del mapa actual
+        const gameId = mapContainer.attr('data-game-id'); // Útil para depurar
+
+        // --- LÓGICA DE CORRELACIÓN USANDO EL ORDEN/ÍNDICE ---
+        if (index < mapsArray.length) {
+            const targetMap = mapsArray[index]; // Obtenemos el mapa de nuestro array por su índice
+            const mapName = targetMap.mapName;  // Usamos el nombre que YA TENEMOS de la pestaña Overview
+
+            console.log(`Procesando estadísticas de Performance para el mapa: ${mapName} (game-id: ${gameId}, índice en array: ${index})`);
+
+            // Preparamos el objeto para los datos de performance de este mapa
+            targetMap.performance_data = {
+                general_duel_matrix: [],
+                first_kill_duel_matrix: [],
+                operator_duel_matrix: [],
+                advanced_player_stats: []
+            };
+
+            // Matrices de Duelos para ESTE MAPA (dentro de mapContainer)
+            const mapDuelMatrixTables = mapContainer.find('table.wf-table-inset.mod-matrix');
+            if (mapDuelMatrixTables.length >= 1) {
+                targetMap.performance_data.general_duel_matrix = parseSingleDuelMatrixTable(mapDuelMatrixTables.eq(0), performancePageHtml);
+            }
+            if (mapDuelMatrixTables.length >= 2) {
+                targetMap.performance_data.first_kill_duel_matrix = parseSingleDuelMatrixTable(mapDuelMatrixTables.eq(1), performancePageHtml);
+            }
+            if (mapDuelMatrixTables.length >= 3) {
+                targetMap.performance_data.operator_duel_matrix = parseSingleDuelMatrixTable(mapDuelMatrixTables.eq(2), performancePageHtml);
+            }
+
+            // Tabla de Estadísticas Avanzadas para ESTE MAPA (dentro de mapContainer)
+            const mapAdvStatsTable = mapContainer.find('table.wf-table-inset.mod-adv-stats');
+            if (mapAdvStatsTable.length > 0) {
+                targetMap.performance_data.advanced_player_stats = parseSingleAdvStatsTable(mapAdvStatsTable, performancePageHtml);
+            }
+            console.log(`Datos de Performance procesados y añadidos para el mapa: ${mapName}`);
+
+        } else {
+            // Esto ocurriría si hay más bloques de mapa en la página de Performance
+            // que los que se identificaron en la página de Overview. Es poco común.
+            console.log(`Se encontró un bloque de mapa (${gameId}) en pág. Performance (índice ${index}) sin correspondencia en mapsArray (tamaño ${mapsArray.length}).`);
+        }
     });
 
-    return { overall: overallPerformanceData };
+    return { overall: overallPerformanceResult };
 }
-
 
 function parseEconomyPage(economyPageHtml, mapsArray) {
     console.log("Parseando página de Economy...");
