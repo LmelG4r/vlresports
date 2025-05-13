@@ -302,7 +302,7 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
     return summary;
 }
 
-function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, equipo1NombreCanonico, equipo2NombreCanonico) {
+function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, team1Name, team2Name) {
     const dataRows = tableCheerio.find('tr').filter((i, rowEl) => {
         return pageCheerioInstance(rowEl).find('td:first-child div.team').length > 0;
     });
@@ -320,9 +320,9 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
 
     // Determinar cuál nombre canónico corresponde a team1NameFromTable y team2NameFromTable
     // Esto es importante si el orden en la tabla no siempre coincide con tu equipo1/equipo2 global.
-    // Por simplicidad ahora, asumiré que equipo1NombreCanonico es el de team1Row.
-    const currentMapTeam1Name = equipo1NombreCanonico;
-    const currentMapTeam2Name = equipo2NombreCanonico;
+    // Por simplicidad ahora, asumiré que team1NameCanonico es el de team1Row.
+    const currentMapTeam1Name = team1Name;
+    const currentMapTeam2Name = team2Name;
 
     const cleanTeam1Key = currentMapTeam1Name.replace(/\s+/g, '').toLowerCase();
     const cleanTeam2Key = currentMapTeam2Name.replace(/\s+/g, '').toLowerCase();
@@ -424,7 +424,7 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
 }
 
 // --- FIN: Funciones Auxiliares ---
-function parseEconomyPage(economyPageHtml, mapsArray) { // mapsArray es matchData.maps
+function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
     console.log("Parseando página de Economy...");
     
     const overallEconomyResult = { // Para las estadísticas generales del partido
@@ -473,8 +473,6 @@ function parseEconomyPage(economyPageHtml, mapsArray) { // mapsArray es matchDat
                 targetMap.economy_data.summary = parseEcoSummaryTable(mapEconTables.eq(0), economyPageHtml);
             }
             if (mapEconTables.length >= 2) {
-                const equipo1General = matchData.teams[0].name; // <<<--- AQUÍ ESTÁ EL PROBLEMA SI 'matchData' NO ESTÁ DEFINIDO O NO TIENE 'teams'
-                const equipo2General = matchData.teams[1].name; // <<<--- AQUÍ ESTÁ EL PROBLEMA
                 parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, equipo1General, equipo2General);
             }
             console.log(`Datos de Economy procesados y añadidos para el mapa: ${mapName}`);
@@ -678,7 +676,7 @@ const scrapeMatchDetails = async (matchId) =>{
         }
 
         if (economyPageHtml) {
-            const econData = parseEconomyPage(economyPageHtml, matchData.maps); // Llama a la nueva función
+            const econData = parseEconomyPage(economyPageHtml, matchData.maps, matchData.maps, team1Name, team2Name);
             matchData.economy_general = econData.overall; // Guarda los datos generales de economía
             // matchData.maps ya habrá sido actualizado por referencia por parseEconomyPage
         }
