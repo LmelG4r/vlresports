@@ -750,10 +750,10 @@ const scrapeMatchDetails = async (matchId) =>{
             // Agregar la información del mapa y las rondas al matchData
             matchData.maps.push({
                 mapName:currentMapName,// mapName ya podría tener "Mapa No Jugado X"
-                duration,
-                teams,
-                rounds,
-                played // Asegúrate que 'played' esté definida antes de este punto
+                duration: duration,
+                teams: teams,
+                rounds: rounds, // Estará vacío si isPlayed es false y no extraes rondas
+                played: isPlayed // Propiedad 'played'
             });
   
         });
