@@ -544,8 +544,8 @@ const scrapeMatchDetails = async (matchId) =>{
             team2Score = 'N/A';
         }
         
-        const format = html(".match-header-vs-note").eq(1).text().trim();
-        const mapPicksBans = html(".match-header-note").text().trim();
+        const format = $(".match-header-vs-note").eq(1).text().trim();
+        const mapPicksBans = $(".match-header-note").text().trim();
         
         const matchData = {
             matchId,
@@ -563,8 +563,8 @@ const scrapeMatchDetails = async (matchId) =>{
         };
 
         // Extraer mapas jugados y su información
-        html(".vm-stats-game").each((_, el) => {
-            const mapContext = html(el);
+        $(".vm-stats-game").each((_, el) => {
+            const mapContext = $(el);
 
             const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
             const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
@@ -581,14 +581,14 @@ const scrapeMatchDetails = async (matchId) =>{
                 },
             ];const rounds = [];
             mapContext.find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
-                const roundElement = html(roundEl); // Es buena práctica guardar el elemento jQuery/Cheerio
+                const roundElement = $(roundEl); // Es buena práctica guardar el elemento jQuery/Cheerio
                 const team1Sq = roundElement.find(".rnd-sq").eq(0);
                 const team2Sq = roundElement.find(".rnd-sq").eq(1);
                 
                 const team1Win = team1Sq.hasClass("mod-win");
                 const team2Win = team2Sq.hasClass("mod-win");
 
-                const roundNumber = parseInt(html(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
+                const roundNumber = parseInt($(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
         
                 let winningTeam = null;
                 let result = null;
