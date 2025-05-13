@@ -219,22 +219,20 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
     console.log(`[parsePerformancePage] Longitud de mapsArray: ${mapsArray.length}`);
 
     performancePageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
-        console.log(`[parsePerformancePage] Índice actual del mapa: ${index}`);
-        const mapContainer = performancePageHtml(mapElement); // Contenedor del mapa actual
-        const gameId = mapContainer.attr('data-game-id'); // Útil para depurar
+        console.log(`[parsePerformancePage] Índice actual del mapa: ${index}, gameId: ${gameId}`);
+        const mapContainer = performancePageHtml(mapElement);
+        const gameId = mapContainer.attr('data-game-id');
+        const targetMap = matchData.maps.find(map => map.gameId === gameId); // Assuming you add gameId to your maps array in scrapeMatchDetails
 
-        // --- LÓGICA DE CORRELACIÓN USANDO EL ORDEN/ÍNDICE ---
-        if (index < mapsArray.length) {
-            const targetMap = mapsArray[index]; // Obtenemos el mapa de nuestro array por su índice
-            if (!targetMap.played && targetMap.MapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
-                console.log(`[parsePerformancePage] Valor de targetMap en índice ${index}:`, targetMap);
-                console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.currentMapName}`);
-                return; // Saltar al siguiente mapa
+
+        if (targetMap) {
+            if (!targetMap.played && targetMap.mapName && targetMap.mapName.includes("No Jugado")) {
+                console.log(`[parsePerformancePage] Saltando mapa no jugado: ${targetMap.mapName}`);
+                return;
             }
-            const currentMapName = targetMap.currentMapName;  // Usamos el nombre que YA TENEMOS de la pestaña Overview
-
-            console.log(`Procesando estadísticas de Performance para el mapa: ${currentMapName} (game-id: ${gameId}, índice en array: ${index})`);
-
+            const currentMapName = targetMap.mapName;
+            console.log(`Procesando estadísticas de Performance para el mapa: ${currentMapName} (game-id: ${gameId}, índice en array: ${matchData.maps.indexOf(targetMap)})`);
+    
             // Preparamos el objeto para los datos de performance de este mapa
             targetMap.performance_data = {
                 general_duel_matrix: [],
@@ -263,9 +261,7 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
             console.log(`Datos de Performance procesados y añadidos para el mapa: ${currentMapName}`);
 
         } else {
-            // Esto ocurriría si hay más bloques de mapa en la página de Performance
-            // que los que se identificaron en la página de Overview. Es poco común.
-            console.log(`Se encontró un bloque de mapa (${gameId}) en pág. Performance (índice ${index}) sin correspondencia en mapsArray (tamaño ${mapsArray.length}).`);
+            console.warn(`[parsePerformancePage] No se encontró mapa correspondiente en mapsArray para gameId: ${gameId}`);
         }
     });
 
@@ -759,6 +755,7 @@ const scrapeMatchDetails = async (matchId) =>{
                 rounds: rounds, // Estará vacío si isPlayed es false y no extraes rondas
                 played: isPlayed // Propiedad 'played'
             });
+            console.log("[scrapeMatchDetails] Contenido de matchData.maps:", matchData.maps);
   
         });
 
