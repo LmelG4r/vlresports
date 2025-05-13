@@ -433,8 +433,8 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
 // --- FIN: Funciones Auxiliares ---
 function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
     console.log("Parseando página de Economy...");
-    console.log(`[parseEconomyPage] Recibido team1NameGlobal: "${team1NameGlobal}", Tipo: ${typeof team1NameGlobal}`);
-    console.log(`[parseEconomyPage] Recibido team2NameGlobal: "${team2NameGlobal}", Tipo: ${typeof team2NameGlobal}`);
+    console.log(`[parseEconomyPage] Recibido team1NameGlobal: "${team1Name}", Tipo: ${typeof team1Name}`);
+    console.log(`[parseEconomyPage] Recibido team2NameGlobal: "${team2Name}", Tipo: ${typeof team2Name}`);
     
     
     const overallEconomyResult = { // Para las estadísticas generales del partido
