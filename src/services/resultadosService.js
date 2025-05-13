@@ -265,34 +265,183 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
     return { overall: overallPerformanceResult };
 }
 
-function parseEconomyPage(economyPageHtml, mapsArray) {
-    console.log("Parseando página de Economy...");
-    let overallEconomy = { message: "Datos generales de economía pendientes." };
-    // Lógica para extraer overallEconomy de economyPageHtml (sección game=all)
-    // Ejemplo: const generalEconomyTable = economyPageHtml('div.vm-stats[data-game-id="all"] .MODULO_DE_ECONOMIA'); // Ajusta el selector!
-    // if (generalEconomyTable.length) { overallEconomy = parseEconomyStatsFromTable(generalEconomyTable); }
+// --- INICIO: Funciones Auxiliares para Parseo de Economía ---
 
-    // Itera sobre los bloques de mapa en la PÁGINA DE ECONOMY
-   economyPageHtml(".vm-stats-game").each((index, mapElement) => {
-        // ========= CORRECCIÓN AQUÍ =========
-        const mapContext = economyPageHtml(mapElement);
+function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
+    const summary = [];
+    // Saltamos la fila de encabezado (asumiendo que la primera <tr> son <th>)
+    tableCheerio.find('tr').slice(1).each((index, rowElement) => {
+        const cells = pageCheerioInstance(rowElement).find('td');
+        const teamData = {};
+
+        // Celda 0: Nombre del Equipo
+        teamData.teamName = pageCheerioInstance(cells.eq(0)).find('div.team').text().trim();
+        if (!teamData.teamName) return; // Si no hay nombre de equipo, saltar
+
+        // Función para parsear "N (M)" o solo "N"
+        const parseStatVal = (cell) => {
+            const text = pageCheerioInstance(cell).find('div.stats-sq').text().trim();
+            const match = text.match(/(\d+)(?:\s*\((\d+)\))?/); // Busca "N" o "N (M)"
+            if (match) {
+                return {
+                    total: parseInt(match[1], 10),
+                    detail: match[2] ? parseInt(match[2], 10) : null // El valor entre paréntesis
+                };
+            }
+            return { total: 0, detail: null };
+        };
         
-        const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
-        const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+        // Columnas según tu descripción: Pistol, Eco, $, $$, $$$
+        teamData.pistol_won = parseStatVal(cells.eq(1));      // Pistol Won
+        teamData.eco_rounds_won = parseStatVal(cells.eq(2));  // Eco (won)
+        teamData.light_buy_won = parseStatVal(cells.eq(3));   // $ (won)
+        teamData.half_buy_won = parseStatVal(cells.eq(4));    // $$ (won)
+        teamData.full_buy_won = parseStatVal(cells.eq(5));    // $$$ (won)
         
-        const targetMap = mapsArray.find(m => m.mapName === mapName);
-        if (targetMap) {
-            // Lógica para extraer las stats de economía para este mapa específico desde mapContext
-            // Ejemplo: targetMap.economy_details = parseMapEconomyStats(mapContext);
-            targetMap.economy_stats = { data: `Stats de economía para ${mapName} pendientes.` }; // Placeholder
-            console.log(`Parseando economía para el mapa: ${mapName}`); // Debería ser `Placeholder de economía...`
-        } else {
-            console.log(`Mapa ${mapName} (encontrado en pág. Economy) no hallado en mapsArray original.`);
-        }
+        summary.push(teamData);
     });
-    return { overall: overallEconomy };
+    return summary;
 }
 
+function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate) {
+    // mapRoundsArrayToUpdate es el array targetMap.rounds que ya tiene info de ganador/lado
+    const roundEcoDetails = []; // O actualizamos mapRoundsArrayToUpdate directamente
+
+    // Primero, extraemos los nombres de los equipos del primer <td>
+    const headerTd = tableCheerio.find('tr').first().find('td').first();
+    const teamNames = [];
+    headerTd.find('div.team').each((i, teamEl) => {
+        teamNames.push(pageCheerioInstance(teamEl).text().trim());
+    });
+    // Asumimos teamNames[0] es el equipo de arriba, teamNames[1] el de abajo.
+
+    if (teamNames.length < 2) {
+        console.log("No se pudieron extraer los nombres de equipo de la tabla de detalles de economía por ronda.");
+        return roundEcoDetails; // O un array vacío si no se actualiza directamente
+    }
+
+    // Iteramos sobre las columnas de rondas (todas las <td> excepto la primera)
+    tableCheerio.find('tr').first().find('td').slice(1).each((index, roundCellElement) => {
+        const roundCell = pageCheerioInstance(roundCellElement);
+        const roundNumText = roundCell.find('.ge-text-light.round-num').text().trim();
+        const roundNum = parseInt(roundNumText, 10);
+
+        const banks = [];
+        roundCell.find('div.bank').each((i, bankEl) => {
+            banks.push(pageCheerioInstance(bankEl).text().trim());
+        });
+
+        const buySqElements = roundCell.find('div.rnd-sq');
+        const team1BuyIcon = buySqElements.eq(0).text().trim(); // Compra del equipo de arriba
+        const team2BuyIcon = buySqElements.eq(1).text().trim(); // Compra del equipo de abajo
+        
+        let winningSide = null;
+        let winningBuyIcon = null;
+
+        if (buySqElements.eq(0).hasClass('mod-win')) { // Equipo 1 (arriba) ganó
+            winningBuyIcon = team1BuyIcon;
+            if (buySqElements.eq(0).hasClass('mod-ct')) winningSide = 'ct';
+            else if (buySqElements.eq(0).hasClass('mod-t')) winningSide = 't';
+        } else if (buySqElements.eq(1).hasClass('mod-win')) { // Equipo 2 (abajo) ganó
+            winningBuyIcon = team2BuyIcon;
+            if (buySqElements.eq(1).hasClass('mod-ct')) winningSide = 'ct';
+            else if (buySqElements.eq(1).hasClass('mod-t')) winningSide = 't';
+        }
+        
+        const currentRoundEco = {
+            roundNumber: roundNum,
+            team1_name: teamNames[0], // Equipo de arriba
+            team1_bank_start: banks.length > 0 ? banks[0] : "N/A",
+            team1_buy_type: team1BuyIcon,
+            team2_name: teamNames[1], // Equipo de abajo
+            team2_bank_start: banks.length > 1 ? banks[1] : "N/A", // El segundo div.bank en la celda de ronda
+            team2_buy_type: team2BuyIcon,
+            round_winner_side_from_econ_tab: winningSide, // Lado ganador según esta tabla
+            round_winner_buy_type: winningBuyIcon // Compra del lado ganador
+        };
+
+        // Actualizar el array de rondas del mapa existente
+        if (mapRoundsArrayToUpdate && roundNum > 0 && roundNum <= mapRoundsArrayToUpdate.length) {
+            const targetRound = mapRoundsArrayToUpdate[roundNum - 1]; // -1 porque los arrays son base 0
+            if (targetRound && targetRound.roundNumber === roundNum) {
+                targetRound.economy = currentRoundEco; // Añade el objeto de economía a la ronda
+            } else {
+                 // Esto podría pasar si los números de ronda no coinciden perfectamente
+                console.log(`Discrepancia de ronda al añadir economía: ${roundNum} vs ${targetRound?.roundNumber}`);
+                roundEcoDetails.push(currentRoundEco); // Guardar por separado si no se puede fusionar
+            }
+        } else {
+            roundEcoDetails.push(currentRoundEco); // Guardar por separado si no hay array de rondas para actualizar
+        }
+    });
+    // Si no actualizamos mapRoundsArrayToUpdate directamente, devolvemos roundEcoDetails
+    // Si lo actualizamos, esta función podría no necesitar devolver nada o solo un status.
+    // Por ahora, la función modifica mapRoundsArrayToUpdate y también devolvemos por si acaso.
+    return roundEcoDetails; 
+}
+
+// --- FIN: Funciones Auxiliares ---
+function parseEconomyPage(economyPageHtml, mapsArray) { // mapsArray es matchData.maps
+    console.log("Parseando página de Economy...");
+    
+    const overallEconomyResult = { // Para las estadísticas generales del partido
+        summary: [], // Para la primera tabla .mod-econ
+        round_details: [] // Para la segunda tabla .mod-econ (detalles ronda a ronda)
+    };
+
+    // 1. PROCESAR SECCIÓN DE ESTADÍSTICAS GENERALES (data-game-id="all")
+    const overallStatsContainer = economyPageHtml('div.vm-stats-game[data-game-id="all"]');
+    if (overallStatsContainer.length > 0) {
+        console.log("Procesando estadísticas generales de Economy (game=all)...");
+        const econTables = overallStatsContainer.find('table.wf-table-inset.mod-econ');
+        
+        if (econTables.length >= 1) {
+            console.log("Procesando tabla de resumen de economía general...");
+            overallEconomyResult.summary = parseEcoSummaryTable(econTables.eq(0), economyPageHtml);
+        }
+        if (econTables.length >= 2) {
+            console.log("Procesando tabla de detalles de economía por ronda general...");
+            // Para la tabla general, no tenemos un mapRoundsArrayToUpdate preexistente, así que recogerá los datos.
+            overallEconomyResult.round_details = parseEcoRoundDetailsTable(econTables.eq(1), economyPageHtml, null); 
+        }
+    } else {
+        console.log("Contenedor de estadísticas generales (vm-stats-game[data-game-id='all']) no encontrado en la página de Economy.");
+    }
+
+    // 2. PROCESAR SECCIONES DE ESTADÍSTICAS POR MAPA (data-game-id != 'all')
+    console.log("Buscando secciones de estadísticas de economía por mapa...");
+    economyPageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
+        const mapContainer = economyPageHtml(mapElement); 
+        const gameId = mapContainer.attr('data-game-id');
+
+        if (index < mapsArray.length) {
+            const targetMap = mapsArray[index]; 
+            const mapName = targetMap.mapName;  
+
+            console.log(`Procesando estadísticas de Economy para el mapa: ${mapName} (game-id: ${gameId}, índice: ${index})`);
+
+            targetMap.economy_data = {
+                summary: [],
+                // round_details se añadirán directamente al array targetMap.rounds existente
+            };
+
+            const mapEconTables = mapContainer.find('table.wf-table-inset.mod-econ');
+            if (mapEconTables.length >= 1) {
+                targetMap.economy_data.summary = parseEcoSummaryTable(mapEconTables.eq(0), economyPageHtml);
+            }
+            if (mapEconTables.length >= 2) {
+                // Pasamos targetMap.rounds para que se actualice con los detalles económicos
+                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds);
+            }
+            console.log(`Datos de Economy procesados y añadidos para el mapa: ${mapName}`);
+        } else {
+            console.log(`Se encontró un bloque de mapa de economía (${gameId}) en pág. Economy (índice ${index}) sin correspondencia en mapsArray.`);
+        }
+    });
+
+    return { overall: overallEconomyResult }; // Devuelve las estadísticas generales
+                                            // mapsArray (matchData.maps) se actualiza por referencia
+}
 // Función principal para extraer los detalles del partido
 async function scrapeMatchDetails(matchId) {
     try {
@@ -355,6 +504,12 @@ async function scrapeMatchDetails(matchId) {
             } catch (tabError) {
                 console.error(`Error al cargar la página de Economy ${economyFullUrl}:`, tabError.message);
             }
+        }
+
+        if (economyPageHtml) {
+            const econData = parseEconomyPage(economyPageHtml, matchData.maps); // Llama a la nueva función
+            matchData.economy_general = econData.overall; // Guarda los datos generales de economía
+            // matchData.maps ya habrá sido actualizado por referencia por parseEconomyPage
         }
 
         const tournament = html(".match-header-event div[style='font-weight: 700;']").text().trim();
