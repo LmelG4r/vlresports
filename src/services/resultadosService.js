@@ -558,7 +558,7 @@ const scrapeMatchDetails = async (matchId) =>{
             ],
             format: format || "Formato no especificado",
             mapPicksBans: mapPicksBans || "Estadisticas de todos los mapas",
-            overview_general: scrapeOverview(html), // Overview general
+            overview_general: scrapeOverview($), // Overview general
             maps: [],
         };
 
