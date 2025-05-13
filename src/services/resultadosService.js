@@ -524,7 +524,7 @@ async function scrapeMatchDetails(matchId) {
             }
         });
         
-        matchData.teams = teamsData; 
+        
 
         const format = html(".match-header-vs-note").eq(1).text().trim();
         const mapPicksBans = html(".match-header-note").text().trim();
@@ -534,10 +534,7 @@ async function scrapeMatchDetails(matchId) {
             tournament: tournament || "Torneo no especificado",
             stage: stage || "Etapa no especificada",
             date: date || "Fecha no especificada",
-            teams: [
-                { name: team1Name || "Equipo 1 no especificado", score: team1Score || "0" },
-                { name: team2Name || "Equipo 2 no especificado", score: team2Score || "0" },
-            ],
+            teams : teamsData || "Equipos no especificados",
             format: format || "Formato no especificado",
             mapPicksBans: mapPicksBans || "Estadisticas de todos los mapas",
             overview_general: scrapeOverview(html), // Overview general
