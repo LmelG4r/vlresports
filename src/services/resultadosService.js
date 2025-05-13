@@ -223,13 +223,13 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
         // --- LÓGICA DE CORRELACIÓN USANDO EL ORDEN/ÍNDICE ---
         if (index < mapsArray.length) {
             const targetMap = mapsArray[index]; // Obtenemos el mapa de nuestro array por su índice
-            if (!targetMap.played && targetMap.mapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
-                console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.mapName}`);
+            if (!targetMap.played && targetMap.currentMapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
+                console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.currentMapName}`);
                 return; // Saltar al siguiente mapa
             }
-            const mapName = targetMap.mapName;  // Usamos el nombre que YA TENEMOS de la pestaña Overview
+            const currentMapName = targetMap.currentMapName;  // Usamos el nombre que YA TENEMOS de la pestaña Overview
 
-            console.log(`Procesando estadísticas de Performance para el mapa: ${mapName} (game-id: ${gameId}, índice en array: ${index})`);
+            console.log(`Procesando estadísticas de Performance para el mapa: ${currentMapName} (game-id: ${gameId}, índice en array: ${index})`);
 
             // Preparamos el objeto para los datos de performance de este mapa
             targetMap.performance_data = {
@@ -256,7 +256,7 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
             if (mapAdvStatsTable.length > 0) {
                 targetMap.performance_data.advanced_player_stats = parseSingleAdvStatsTable(mapAdvStatsTable, performancePageHtml);
             }
-            console.log(`Datos de Performance procesados y añadidos para el mapa: ${mapName}`);
+            console.log(`Datos de Performance procesados y añadidos para el mapa: ${currentMapName}`);
 
         } else {
             // Esto ocurriría si hay más bloques de mapa en la página de Performance
@@ -378,7 +378,7 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
         const team1BankText = team1RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
         const team2BankText = team2RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
         
-        console.log(`Ronda ${roundNum} del mapa ${mapName}:`); // Añade mapName aquí para diferenciar los logs por mapa
+        console.log(`Ronda ${roundNum} del mapa ${currentMapName}:`); // Añade currentMapName aquí para diferenciar los logs por mapa
         console.log(`  Team1 (arriba en tabla eco): Texto Banco="${team1BankText.trim()}", Parsed=${parseBankValue(team1BankText)}`);
         console.log(`  Team2 (abajo en tabla eco): Texto Banco="${team2BankText.trim()}", Parsed=${parseBankValue(team2BankText)}`);
 
@@ -436,16 +436,16 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
                 targetRound[keyForCanonTeam2] = team1Bank; // team1Row era en realidad equipo2NombreCanonico
                 targetRound[keyForCanonTeam1] = team2Bank; // team2Row era en realidad equipo1NombreCanonico
             } else {
-                console.warn(`[parseEcoRoundDetailsTable] Mapa ${mapName}, Ronda ${roundNum}: No se pudo hacer coincidir nombre de tabla eco "${nameFromTeam1RowHTML}" con nombres canónicos. Usando asignación por defecto.`);
+                console.warn(`[parseEcoRoundDetailsTable] Mapa ${currentMapName}, Ronda ${roundNum}: No se pudo hacer coincidir nombre de tabla eco "${nameFromTeam1RowHTML}" con nombres canónicos. Usando asignación por defecto.`);
                 // Asignación por defecto (podría ser incorrecta si el orden de la tabla no coincide con tu team1/team2 global)
                 targetRound[keyForCanonTeam1] = team1Bank;
                 targetRound[keyForCanonTeam2] = team2Bank;
             }
             // --- DEBUG LOG para la asignación ---
-            // console.log(`Ronda ${roundNum} Mapa ${mapName} - Asignación de bancos: ${keyForCanonTeam1}=${targetRound[keyForCanonTeam1]}, ${keyForCanonTeam2}=${targetRound[keyForCanonTeam2]}`);
+            // console.log(`Ronda ${roundNum} Mapa ${currentMapName} - Asignación de bancos: ${keyForCanonTeam1}=${targetRound[keyForCanonTeam1]}, ${keyForCanonTeam2}=${targetRound[keyForCanonTeam2]}`);
         
         } else {
-            console.warn(`[parseEcoRoundDetailsTable] Mapa ${mapName}: No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate. Datos económicos para esta ronda no se guardarán.`);
+            console.warn(`[parseEcoRoundDetailsTable] Mapa ${currentMapName}: No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate. Datos económicos para esta ronda no se guardarán.`);
         }
     });
 }
@@ -492,13 +492,13 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
         const mapContainer = economyPageHtml(mapElement);
         const gameId = mapContainer.attr('data-game-id');
         const targetMap = mapsArray[index]; // Asumiendo que index < mapsArray.length
-        if (!targetMap.played && targetMap.mapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
-            console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.mapName}`);
+        if (!targetMap.played && targetMap.currentMapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
+            console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.currentMapName}`);
             return; // Saltar al siguiente mapa
         }
-        const mapName = targetMap ? targetMap.mapName : "NombreDesconocido";
+        const currentMapName = targetMap ? targetMap.currentMapName : "NombreDesconocido";
     
-        console.log(`[parseEconomyPage] Procesando sección de mapa: ${mapName} (gameId: ${gameId})`); // Log ANTES de definir mapEconTables
+        console.log(`[parseEconomyPage] Procesando sección de mapa: ${currentMapName} (gameId: ${gameId})`); // Log ANTES de definir mapEconTables
     
         const mapEconTables = mapContainer.find('table.wf-table-inset.mod-econ'); // mapEconTables DEFINIDO AQUÍ
         
@@ -507,16 +507,16 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
             return; // Saltar esta iteración
         }
         // Dentro del .each de los mapas en parseEconomyPage
-        console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa ${mapName}. team1Name: "${team1Name}", team2Name: "${team2Name}"`);
+        console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa ${currentMapName}. team1Name: "${team1Name}", team2Name: "${team2Name}"`);
         if (index < mapsArray.length) {
             const targetMap = mapsArray[index]; 
-            if (!targetMap.played && targetMap.mapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
-                console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.mapName}`);
+            if (!targetMap.played && targetMap.currentMapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
+                console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.currentMapName}`);
                 return; // Saltar al siguiente mapa
             }
-            const mapName = targetMap.mapName;  
+            const currentMapName = targetMap.currentMapName;  
 
-            console.log(`Procesando estadísticas de Economy para el mapa: ${mapName} (game-id: ${gameId}, índice: ${index})`);
+            console.log(`Procesando estadísticas de Economy para el mapa: ${currentMapName} (game-id: ${gameId}, índice: ${index})`);
 
             targetMap.economy_data = {
                 summary: [],
@@ -528,10 +528,10 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
                 targetMap.economy_data.summary = parseEcoSummaryTable(mapEconTables.eq(0), economyPageHtml);
             }
             if (mapEconTables.length >= 2) {
-                console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa <span class="math-inline">\{mapName\}\. team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2Name}"`);
+                console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa <span class="math-inline">\{currentMapName\}\. team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2Name}"`);
                 parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1Name, team2Name);
             } else {
-                console.log(`[parseEconomyPage] No se encontró la segunda tabla de economía para el mapa ${mapName}`);
+                console.log(`[parseEconomyPage] No se encontró la segunda tabla de economía para el mapa ${currentMapName}`);
             }}
     });
 
