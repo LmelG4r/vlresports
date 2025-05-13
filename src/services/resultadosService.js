@@ -96,7 +96,9 @@ function parsePerformancePage(performancePageHtml, mapsArray) {
 
     // Itera sobre los bloques de mapa en la PÁGINA DE PERFORMANCE
     performancePageHtml(".vm-stats-game").each((index, mapElement) => {
-        const mapContext = cheerio.load(performancePageHtml(mapElement).html()); // Carga el contexto del elemento mapa
+        // ========= CORRECCIÓN AQUÍ =========
+        const mapContext = performancePageHtml(mapElement);
+
         const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
         const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
 
@@ -122,8 +124,10 @@ function parseEconomyPage(economyPageHtml, mapsArray) {
     // if (generalEconomyTable.length) { overallEconomy = parseEconomyStatsFromTable(generalEconomyTable); }
 
     // Itera sobre los bloques de mapa en la PÁGINA DE ECONOMY
-    economyPageHtml(".vm-stats-game").each((index, mapElement) => {
-        const mapContext = cheerio.load(economyPageHtml(mapElement).html());
+   economyPageHtml(".vm-stats-game").each((index, mapElement) => {
+        // ========= CORRECCIÓN AQUÍ =========
+        const mapContext = economyPageHtml(mapElement);
+        
         const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
         const mapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
         
