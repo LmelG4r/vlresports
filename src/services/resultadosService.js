@@ -3,7 +3,7 @@ const cheerio = require("cheerio");
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
 // Función para extraer los datos de Overview
-function scrapeOverview(html, map = "general") {
+function scrapeOverview(cheerioObject, statType) {
     const overviewData = [];
     cheerioObject.find('tbody tr').each((i, el) => {
         const playerRow = html(el); // Convertir a jQuery
