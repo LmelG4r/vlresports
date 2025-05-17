@@ -5,9 +5,21 @@ const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 // Función para extraer los datos de Overview
 function scrapeOverview(html, map = "general") {
     const overviewData = [];
-    html(".wf-table-inset.mod-overview tbody tr").each((_, el) => {
+    html('tbody tr').each((i, el) => {
         const playerRow = html(el); // Convertir a jQuery
 
+        const allMapsOverviewTable = $('div.vm-stats-game[data-game-id="all"]').find('table.wf-table-inset.mod-overview'); // O un selector más general si "all" no tiene su propio div
+
+        if (allMapsOverviewTable.length) {
+            matchData.statsAllMaps.overview = scrapeOverview(allMapsOverviewTable, "overview_all_maps");
+        } else {
+            // Si no hay un "data-game-id='all'", y scrapeOverview espera el $ global para la primera tabla:
+            // Puede que tu actual `scrapeOverview($, "overview")` ya tome la tabla correcta del overview general.
+            // En ese caso, solo cambia dónde lo guardas:
+            matchData.statsAllMaps.overview = scrapeOverview($, "overview_all_maps"); // Si scrapeOverview toma la primera tabla general del $
+            console.log("[resultadosService] Estadísticas de Overview para 'All Maps' extraídas.");
+        }
+        
         // Extraer información del jugador y su equipo
         const playerName = playerRow.find(".mod-player .text-of").text().trim() || "Jugador no especificado";
         const teamName = playerRow.find(".mod-player .ge-text-light").text().trim() || "Equipo no especificado";
@@ -305,7 +317,7 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
     return summary;
 }
 
-function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, equipo1NombreCanonico, equipo2NombreCanonico) {
+function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, equipo1NombreCanonico, equipo2NombreCanonico, nombreDelMapaActual) {
     if (typeof equipo1NombreCanonico !== 'string' || typeof equipo2NombreCanonico !== 'string') {
         console.error("[parseEcoRoundDetailsTable] Error: Nombres de equipo canónicos no son strings o no proporcionados.");
         console.error(`equipo1NombreCanonico: ${equipo1NombreCanonico} (tipo: ${typeof equipo1NombreCanonico}), equipo2NombreCanonico: ${equipo2NombreCanonico} (tipo: ${typeof equipo2NombreCanonico})`);
@@ -377,7 +389,8 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
         const team1BankText = team1RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
         const team2BankText = team2RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
         
-        console.log(`Ronda ${roundNum} del mapa ${currentMapName}:`); // Añade currentMapName aquí para diferenciar los logs por mapa
+        console.log(`Ronda ${roundNum} del mapa ${nombreDelMapaActual}:`); // Usar el parámetro
+
         console.log(`  Team1 (arriba en tabla eco): Texto Banco="${team1BankText.trim()}", Parsed=${parseBankValue(team1BankText)}`);
         console.log(`  Team2 (abajo en tabla eco): Texto Banco="${team2BankText.trim()}", Parsed=${parseBankValue(team2BankText)}`);
 
@@ -550,6 +563,7 @@ const scrapeMatchDetails = async (matchId) =>{
         const $ = cheerio.load(htmlContent); // 2. Cargar HTML en Cheerio y definir '$'
         console.log(`[resultadosService] Cheerio cargado para ${matchId}.`);
 
+        
         // --- INICIO DE TU LÓGICA PARA EXTRAER NOMBRES Y MARCADORES DE EQUIPOS ---
         // Ahora '$' está definido y listo para usarse.
         let team1Name = '';
@@ -611,15 +625,18 @@ const scrapeMatchDetails = async (matchId) =>{
         }
         
         const tournament = $(".match-header-event div[style='font-weight: 700;']").text().trim();
+        matchData.generalInfo.tournament = $('.match-header-event > div > div').eq(0).text().trim() || "Torneo no especificado";
         const stage = $(".match-header-event-series").text().trim();
-        const date = $(".match-header-date .moment-tz-convert[data-moment-format='dddd, MMMM Do']").text().trim();
+        const eventDateUnix = $('.moment-tz-convert').eq(0).data('unix');
+        matchData.generalInfo.date = eventDateUnix ? new Date(eventDateUnix * 1000).toISOString() : "Fecha no disponible";
 
 
 
         // Obtener nombres de los equipos
         team1Name = $('.match-header-link.mod-1 .wf-title-med').first().text().trim();
+        matchData.generalInfo.team1.name = $('.match-header-link-name .team').eq(0).find('div').eq(0).text().trim() || "Equipo 1 no encontrado";
         team2Name = $('.match-header-link.mod-2 .wf-title-med').first().text().trim();
-
+        matchData.generalInfo.team2.name = $('.match-header-link-name .team').eq(1).find('div').eq(0).text().trim() || "Equipo 2 no encontrado";
         console.log(`[resultadosService] Equipo 1: ${team1Name}, Equipo 2: ${team2Name}`);
 
         // Usamos la lógica robusta para los marcadores que discutimos
@@ -628,7 +645,9 @@ const scrapeMatchDetails = async (matchId) =>{
 
         if (scoreSpans.length === 2) {
             team1Score = $(scoreSpans[0]).text().trim();
+            matchData.generalInfo.team1.score = parseInt($('.match-header-vs .score').eq(0).text().trim(), 10) || 0;
             team2Score = $(scoreSpans[1]).text().trim();
+            matchData.generalInfo.team2.score = parseInt($('.match-header-vs .score').eq(1).text().trim(), 10) || 0;
             console.log(`[resultadosService] Marcadores: ${team1Name} ${team1Score} - ${team2Name} ${team2Score}`);
         } else {
             console.error(`[resultadosService] Error al extraer marcadores para ${matchId}: No se encontraron los dos spans de marcador esperados. Spans encontrados: ${scoreSpans.length}`);
@@ -643,21 +662,21 @@ const scrapeMatchDetails = async (matchId) =>{
         const format = $(".match-header-vs-note").eq(1).text().trim();
         const mapPicksBans = $(".match-header-note").text().trim();
         
-        const matchData = {
-            matchId,
-            tournament: tournament || "Torneo no especificado",
-            stage: stage || "Etapa no especificada",
-            date: date || "Fecha no especificada",
-            teams: [
-                { name: team1Name || "Equipo 1 no especificado", score: team1Score || "0" },
-                { name: team2Name || "Equipo 2 no especificado", score: team2Score || "0" },
-            ],
-            format: format || "Formato no especificado",
-            mapPicksBans: mapPicksBans || "Estadisticas de todos los mapas",
-            overview_general: scrapeOverview($), // Overview general
-            maps: [],
+        let matchData = {
+            matchId: matchId,
+            generalInfo: { // Nueva sección para info global del partido
+                team1: { name: null, score: null },
+                team2: { name: null, score: null },
+                tournament: null,
+                date: null,
+            },
+            statsAllMaps: { // Nueva sección para stats agregadas de todos los mapas
+                overview: [],
+                performance: {}, // Se llenará después
+                economy: {}    // Se llenará después
+            },
+            maps: [] // Aquí irán los detalles de cada mapa
         };
-
         // Extraer mapas jugados y su información
        // Dentro de scrapeMatchDetails
 // ...
@@ -665,11 +684,11 @@ const scrapeMatchDetails = async (matchId) =>{
             const mapContext = $(mapElement);
             const gameId = mapContext.attr('data-game-id');
 
-            // Add this check to skip the 'all' stats container
-            if (gameId === 'all') {
+            if (!gameId || gameId === 'all') {
                 console.log(`[scrapeMatchDetails] Skipping general stats container (game-id: 'all') at index ${mapIndex}.`);
-                return; // Skips to the next iteration of the .each loop
+                return;
             }
+
             // Extraer nombre del mapa
             const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
             let currentMapName = mapNameRaw.replace(/\s+PICK$/, "").trim(); // 'current' para evitar conflicto si tienes otra var 'mapName'
@@ -751,13 +770,31 @@ const scrapeMatchDetails = async (matchId) =>{
             });
          });
             }
+
+            let overviewStatsForThisMap = [];
+            const overviewTableForThisMap = mapContext.find('table.wf-table-inset.mod-overview');
+            if (overviewTableForThisMap.length > 0) {
+                overviewStatsForThisMap = scrapeOverview(overviewTableForThisMap, `overview_map_${gameId}`);
+                // console.log(`[scrapeMatchDetails] Overview stats for map ${gameId} count: ${overviewStatsForThisMap.length}`);
+            } else {
+                // console.log(`[scrapeMatchDetails] No se encontró tabla de overview para el mapa ${gameId}`);
+            }
             // Agregar la información del mapa y las rondas al matchData
             matchData.maps.push({
-                mapName:currentMapName,// mapName ya podría tener "Mapa No Jugado X"
-                duration: duration,
-                teams: teams,
-                rounds: rounds, // Estará vacío si isPlayed es false y no extraes rondas
-                played: isPlayed // Propiedad 'played'
+            mapName: currentMapName.replace(/\s+PICK$/, "").trim(),
+            gameId: gameId, // ¡IMPORTANTE!
+            duration: duration,
+            teams: [ // Asegúrate que team1Name y team2Name son los globales, o si hay nombres específicos por mapa
+                { name: matchData.generalInfo.team1.name, score: parseInt(scoreTeam1Text, 10) || 0 },
+                { name: matchData.generalInfo.team2.name, score: parseInt(scoreTeam2Text, 10) || 0 }
+            ],
+            played: isPlayed, // Esta variable se determina justo después en tu código (línea 761), está bien
+            statsPerMap: {
+                overview: overviewStatsForThisMap, // Stats de overview específicas de este mapa
+                performance: {}, // Se llenará después
+                economy: {}    // Se llenará después
+            },
+            rounds: rounds // Los detalles de las rondas (resultado, etc.)
             });
             console.log("[scrapeMatchDetails] Contenido de matchData.maps:", matchData.maps);
   
