@@ -562,8 +562,22 @@ const scrapeMatchDetails = async (matchId) =>{
 
         const $ = cheerio.load(htmlContent); // 2. Cargar HTML en Cheerio y definir '$'
         console.log(`[resultadosService] Cheerio cargado para ${matchId}.`);
-
         
+        let matchData = {
+            matchId: matchId,
+            generalInfo: { // Nueva sección para info global del partido
+                team1: { name: null, score: null },
+                team2: { name: null, score: null },
+                tournament: null,
+                date: null,
+            },
+            statsAllMaps: { // Nueva sección para stats agregadas de todos los mapas
+                overview: [],
+                performance: {}, // Se llenará después
+                economy: {}    // Se llenará después
+            },
+            maps: [] // Aquí irán los detalles de cada mapa
+        };
         // --- INICIO DE TU LÓGICA PARA EXTRAER NOMBRES Y MARCADORES DE EQUIPOS ---
         // Ahora '$' está definido y listo para usarse.
         let team1Name = '';
@@ -662,24 +676,7 @@ const scrapeMatchDetails = async (matchId) =>{
         const format = $(".match-header-vs-note").eq(1).text().trim();
         const mapPicksBans = $(".match-header-note").text().trim();
         
-        let matchData = {
-            matchId: matchId,
-            generalInfo: { // Nueva sección para info global del partido
-                team1: { name: null, score: null },
-                team2: { name: null, score: null },
-                tournament: null,
-                date: null,
-            },
-            statsAllMaps: { // Nueva sección para stats agregadas de todos los mapas
-                overview: [],
-                performance: {}, // Se llenará después
-                economy: {}    // Se llenará después
-            },
-            maps: [] // Aquí irán los detalles de cada mapa
-        };
-        // Extraer mapas jugados y su información
-       // Dentro de scrapeMatchDetails
-// ...
+        
         $(".vm-stats-game").each((mapIndex, mapElement) => {
             const mapContext = $(mapElement);
             const gameId = mapContext.attr('data-game-id');
