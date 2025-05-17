@@ -6,7 +6,7 @@ const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 function scrapeOverview(cheerioObject, statType) {
     const overviewData = [];
     cheerioObject.find('tbody tr').each((i, el) => {
-        const playerRow = html(el); // Convertir a jQuery
+        const players = [];
 
         const allMapsOverviewTable = $('div.vm-stats-game[data-game-id="all"]').find('table.wf-table-inset.mod-overview'); // O un selector más general si "all" no tiene su propio div
 
