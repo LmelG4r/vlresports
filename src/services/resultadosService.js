@@ -2,32 +2,28 @@ const rp = require("request-promise");
 const cheerio = require("cheerio");
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
-// Función para extraer los datos de Overview
-function scrapeOverview(cheerioObject, statType) {
+function scrapeOverview($, tableCheerioObject, statType) { // statType es opcional, más para logging
     const overviewData = [];
-    cheerioObject.find('tbody tr').each((i, el) => {
-        const players = [];
+    if (!tableCheerioObject || tableCheerioObject.length === 0) {
+        console.warn(`[scrapeOverview] La tabla para '${statType}' está vacía o no fue proporcionada.`);
+        return overviewData; // Devuelve array vacío si no hay tabla
+    }
 
-        const allMapsOverviewTable = $('div.vm-stats-game[data-game-id="all"]').find('table.wf-table-inset.mod-overview'); // O un selector más general si "all" no tiene su propio div
+    console.log(`[scrapeOverview] HTML de la tabla a parsear para ${statType}: ${tableCheerioObject.html().substring(0, 300)}...`);
 
-        if (allMapsOverviewTable.length) {
-            matchData.statsAllMaps.overview = scrapeOverview(allMapsOverviewTable, "overview_all_maps");
-        } else {
-            // Si no hay un "data-game-id='all'", y scrapeOverview espera el $ global para la primera tabla:
-            // Puede que tu actual `scrapeOverview($, "overview")` ya tome la tabla correcta del overview general.
-            // En ese caso, solo cambia dónde lo guardas:
-            matchData.statsAllMaps.overview = scrapeOverview($, "overview_all_maps"); // Si scrapeOverview toma la primera tabla general del $
-            console.log("[resultadosService] Estadísticas de Overview para 'All Maps' extraídas.");
-        }
-        
-        // Extraer información del jugador y su equipo
+
+    tableCheerioObject.find('tbody tr').each((i, rowElement) => {
+        const playerRow = $(rowElement); 
+
         const playerName = playerRow.find(".mod-player .text-of").text().trim() || "Jugador no especificado";
         const teamName = playerRow.find(".mod-player .ge-text-light").text().trim() || "Equipo no especificado";
+        
+        let agent = "Agente no especificado";
+        const agentImgs = playerRow.find(".mod-agents img");
+        if (agentImgs.length > 0) {
+            agent = agentImgs.map((idx, imgEl) => $(imgEl).attr("title")).get().join(', ') || "Agente no especificado";
+        }
 
-        // Extraer el agente (atributo "title" del <img>)
-        const agent = playerRow.find(".mod-agents img").attr("title") || "Agente no especificado";
-
-        // Extraer estadísticas
         const stats = {
             rating: {
                 both: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-both").text().trim() || "0",
@@ -39,54 +35,56 @@ function scrapeOverview(cheerioObject, statType) {
                 attack: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-ct").text().trim() || "0",
             },
-            kills: {
+            kills: { // Kills (K)
                 both: playerRow.find(".mod-vlr-kills .mod-side.mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-vlr-kills .mod-side.mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-vlr-kills .mod-side.mod-ct").text().trim() || "0",
             },
-            deaths: {
-                both: playerRow.find(".mod-vlr-deaths .mod-both").text().trim() || "0",
+            deaths: { // Deaths (D)
+                both: playerRow.find(".mod-vlr-deaths .mod-both").text().trim() || "0", // El selector es .mod-vlr-deaths, no .mod-stat
                 attack: playerRow.find(".mod-vlr-deaths .mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-vlr-deaths .mod-ct").text().trim() || "0",
             },
-            assists: {
+            assists: { // Assists (A) - eq(2) si K/D no se cuenta como mod-stat para el índice
+                // Revisa el HTML para el índice correcto de las stats. Si K y D son .mod-stat, los índices cambian.
+                // Asumiendo K/D NO son .mod-stat y están separados:
+                // Rating (0), ACS (1), Assists (2), K/D Diff (3), KAST (4), ADR (5), HS% (6), FK (7), FD (8)
                 both: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-ct").text().trim() || "0",
             },
-            KillsDeaths: {
+            KillsDeathsDiff: { // K/D Diff (+/-)
                 both: playerRow.find(".mod-kd-diff .mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-kd-diff .mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-kd-diff .mod-ct").text().trim() || "0",
             },
-            kast: {
+            kast: { // KAST
                 both: playerRow.find(".mod-stat").eq(4).find(".mod-both").text().trim() || "0%",
                 attack: playerRow.find(".mod-stat").eq(4).find(".mod-t").text().trim() || "0%",
                 defend: playerRow.find(".mod-stat").eq(4).find(".mod-ct").text().trim() || "0%",
             },
-            adr: {
+            adr: { // ADR
                 both: playerRow.find(".mod-stat").eq(5).find(".mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-stat").eq(5).find(".mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(5).find(".mod-ct").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(5).find(".mod-side.mod-ct").text().trim() || "0",
             },
-            hs: {
+            hsPercent: { // HS%
                 both: playerRow.find(".mod-stat").eq(6).find(".mod-both").text().trim() || "0%",
                 attack: playerRow.find(".mod-stat").eq(6).find(".mod-t").text().trim() || "0%",
                 defend: playerRow.find(".mod-stat").eq(6).find(".mod-ct").text().trim() || "0%",
             },
-            fk: {
+            firstKills: { // FK
                 both: playerRow.find(".mod-stat").eq(7).find(".mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-stat").eq(7).find(".mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-stat").eq(7).find(".mod-ct").text().trim() || "0",
             },
-            fd: {
+            firstDeaths: { // FD
                 both: playerRow.find(".mod-stat").eq(8).find(".mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-stat").eq(8).find(".mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
             },
         };
 
-        // Agregar los datos del jugador al array de resultados
         overviewData.push({
             playerName,
             teamName,
@@ -95,9 +93,216 @@ function scrapeOverview(cheerioObject, statType) {
         });
     });
 
+    console.log(`[scrapeOverview] Datos de overview extraídos para ${statType}: ${overviewData.length} jugadores`);
     return overviewData;
 }
+const scrapeMatchDetails = async (matchId) => {
+    const matchUrl = `${vlrgg_url}/${matchId}`;
+    let htmlContent;
 
+    try {
+        console.log(`[resultadosService] Iniciando scraping para el partido: ${matchUrl}`);
+        htmlContent = await rp(matchUrl);
+        console.log(`[resultadosService] HTML obtenido para ${matchId}.`);
+
+        const $ = cheerio.load(htmlContent); // '$' es el Cheerio para la página principal (Overview)
+        console.log(`[resultadosService] Cheerio cargado para ${matchId}.`);
+        
+        let matchData = {
+            matchId: matchId,
+            generalInfo: {
+                team1: { name: null, score: null },
+                team2: { name: null, score: null },
+                tournament: null,
+                date: null,
+            },
+            statsAllMaps: {
+                overview: [],
+                performance: {},
+                economy: {}
+            },
+            maps: []
+        };
+
+       // CÓDIGO PARA EXTRAER LINKS DE PERFORMANCE Y ECONOMY 
+        const performanceTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="performance"]';
+        const performanceHref = $(performanceTabSelector).attr('href');
+        let performanceFullUrl = null;
+
+        if (performanceHref) {
+            // Asegurarse de que no se duplique la base si el href ya fuera absoluto (poco probable en vlr.gg)
+            performanceFullUrl = performanceHref.startsWith('http') ? performanceHref : vlrgg_url + performanceHref;
+            console.log(`Link de Performance (game=all) encontrado: ${performanceFullUrl}`);
+        } else {
+            console.log("Link de Performance (game=all) NO encontrado.");
+        }
+
+        const economyTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="economy"]';
+        const economyHref = $(economyTabSelector).attr('href');
+        let economyFullUrl = null;
+
+        if (economyHref) {
+            economyFullUrl = economyHref.startsWith('http') ? economyHref : vlrgg_url + economyHref;
+            console.log(`Link de Economy (game=all) encontrado: ${economyFullUrl}`);
+        } else {
+            console.log("Link de Economy (game=all) NO encontrado.");
+        }
+
+
+        // ---- EXTRACCIÓN DE INFO GENERAL ----
+        matchData.generalInfo.tournament = $(".match-header-event > div > div").eq(0).text().trim() || "Torneo no especificado";
+        const eventDateUnix = $('.moment-tz-convert').eq(0).data('unix');
+        matchData.generalInfo.date = eventDateUnix ? new Date(eventDateUnix * 1000).toISOString() : "Fecha no disponible";
+        
+        matchData.generalInfo.team1.name = $('.match-header-link.mod-1 .wf-title-med').first().text().trim() || "Equipo 1 no encontrado";
+        matchData.generalInfo.team2.name = $('.match-header-link.mod-2 .wf-title-med').first().text().trim() || "Equipo 2 no encontrado";
+        console.log(`[resultadosService] Equipo 1: ${matchData.generalInfo.team1.name}, Equipo 2: ${matchData.generalInfo.team2.name}`);
+
+        const scoreSpans = $('.match-header-vs-score .js-spoiler span')
+                            .filter((i, el) => $(el).text().trim() !== ':' && !isNaN(parseInt($(el).text().trim())));
+        if (scoreSpans.length === 2) {
+            matchData.generalInfo.team1.score = parseInt($(scoreSpans[0]).text().trim(), 10);
+            matchData.generalInfo.team2.score = parseInt($(scoreSpans[1]).text().trim(), 10);
+            console.log(`[resultadosService] Marcadores: ${matchData.generalInfo.team1.name} ${matchData.generalInfo.team1.score} - ${matchData.generalInfo.team2.name} ${matchData.generalInfo.team2.score}`);
+        } else {
+            console.warn(`[resultadosService] No se pudieron extraer los marcadores generales.`);
+            matchData.generalInfo.team1.score = 0; // O algún valor por defecto
+            matchData.generalInfo.team2.score = 0;
+        }
+
+        // ---- EXTRACCIÓN DE STATS OVERVIEW PARA "ALL MAPS" (de la página Overview principal) ----
+        // VLR.gg usualmente tiene una tabla de overview para "All Maps" si hay más de un mapa.
+        // Esta tabla está dentro de un <div class="vm-stats-game" data-game-id="all">
+        const allMapsOverviewTableContainer = $('div.vm-stats-game[data-game-id="all"]');
+        if (allMapsOverviewTableContainer.length > 0) {
+            const allMapsActualTable = allMapsOverviewTableContainer.find('table.wf-table-inset.mod-overview');
+            if (allMapsActualTable.length > 0) {
+                matchData.statsAllMaps.overview = scrapeOverview($, allMapsActualTable, "overview_all_maps"); // Pasa '$' y la tabla
+            } else {
+                console.warn("[scrapeMatchDetails] No se encontró la tabla 'mod-overview' dentro del contenedor 'data-game-id=all' de Overview.");
+            }
+        } else {
+            // Si no hay un div "data-game-id='all'", quizás la primera tabla es la general.
+            // Esto es menos común para overview si hay varios mapas.
+            // const firstOverviewTable = $('table.wf-table-inset.mod-overview').first();
+        if (firstOverviewTable.length > 0) {
+                 matchData.statsAllMaps.overview = scrapeOverview(firstOverviewTable, "overview_all_maps_fallback");
+        } else {
+        console.warn("[scrapeMatchDetails] No se encontró el contenedor 'data-game-id=all' ni una tabla de overview general clara para 'All Maps' en la página Overview.");
+        }
+        }
+        
+        // ---- PROCESAMIENTO DE MAPAS INDIVIDUALES (de la página Overview principal) ----
+        $(".vm-stats-game").each((mapIndex, mapElement) => {
+            const mapContext = $(mapElement); // mapContext es un objeto Cheerio para el div.vm-stats-game actual
+            const gameId = mapContext.attr('data-game-id');
+
+            if (!gameId || gameId === 'all') {
+                 console.log(`[scrapeMatchDetails] Saltando contenedor general (game-id: 'all' o sin gameId) en el bucle de mapas individuales.`);
+                return; // Saltar al siguiente .vm-stats-game
+            }
+
+            const mapNameRaw = mapContext.find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
+            let currentMapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+
+            const scoreTeam1Text = mapContext.find(".score").eq(0).text().trim();
+            const scoreTeam2Text = mapContext.find(".score").eq(1).text().trim();
+            const roundsPlayedCount = mapContext.find(".vlr-rounds .vlr-rounds-row-col").length;
+            let isPlayed = true;
+
+            if (!currentMapName) {
+                isPlayed = false;
+                currentMapName = `Mapa No Identificado ${mapIndex + 1} (gameId: ${gameId})`;
+            } else if (scoreTeam1Text === '0' && scoreTeam2Text === '0' && roundsPlayedCount === 0 && !mapContext.find(".vlr-rounds").length) {
+                // El chequeo de `!mapContext.find(".vlr-rounds").length` es para el caso de que el mapa sí se haya jugado pero terminó 0-0 en rondas (improbable)
+                // Si no existe la sección vlr-rounds, es un buen indicador de que no se jugó.
+                isPlayed = false;
+            }
+            
+            const duration = mapContext.find(".map-duration").text().trim();
+            const mapTeam1Name = mapContext.find(".team-name").eq(0).text().trim() || matchData.generalInfo.team1.name;
+            const mapTeam2Name = mapContext.find(".team-name").eq(1).text().trim() || matchData.generalInfo.team2.name;
+
+            const rounds = [];
+            if (isPlayed) {
+                mapContext.find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
+                    const roundElement = $(roundEl);
+                    // ... (tu lógica para extraer rondas, parece estar bien)
+                    // Asegúrate que `winningTeam` use `mapTeam1Name` y `mapTeam2Name` si los nombres de equipo en el mapa pueden ser diferentes
+                    // a los generales (ej. abreviaturas)
+                    const team1Sq = roundElement.find(".rnd-sq").eq(0);
+                    const team2Sq = roundElement.find(".rnd-sq").eq(1);
+                    const team1Win = team1Sq.hasClass("mod-win");
+                    const team2Win = team2Sq.hasClass("mod-win");
+                    const roundNumber = parseInt(roundElement.find(".rnd-num").text().trim(), 10) || j + 1;
+                    let winningTeamName = null;
+                    let outcomeDetail = null; // ct-win, t-win
+                    let winMethodIcon = null;
+                    if (team1Win) {
+                        winningTeamName = mapTeam1Name;
+                        winMethodIcon = team1Sq.find("img").attr("src");
+                        if (team1Sq.hasClass("mod-ct")) outcomeDetail = "ct-win";
+                        else if (team1Sq.hasClass("mod-t")) outcomeDetail = "t-win";
+                    } else if (team2Win) {
+                        winningTeamName = mapTeam2Name;
+                        winMethodIcon = team2Sq.find("img").attr("src");
+                        if (team2Sq.hasClass("mod-ct")) outcomeDetail = "ct-win";
+                        else if (team2Sq.hasClass("mod-t")) outcomeDetail = "t-win";
+                    }
+                    rounds.push({
+                        roundNumber,
+                        winningTeamName: winningTeamName,
+                        outcomeDetail: outcomeDetail,
+                        winMethodIcon: winMethodIcon || "no-time",
+                    });
+                });
+            }
+
+            let overviewStatsForThisMap = [];
+            if (isPlayed) { // Solo buscar stats si el mapa se jugó
+                const overviewTableForThisMap = mapContext.find('table.wf-table-inset.mod-overview');
+                if (overviewTableForThisMap.length > 0) {
+                    overviewStatsForThisMap = scrapeOverview(overviewTableForThisMap, `overview_map_${gameId}`);
+                } else {
+                     console.log(`[scrapeMatchDetails] No se encontró tabla de overview para el mapa ${currentMapName} (gameId: ${gameId})`);
+                }
+            }
+            
+            matchData.maps.push({
+                mapName: currentMapName,
+                gameId: gameId,
+                duration: duration,
+                teams: [
+                    { name: mapTeam1Name, score: parseInt(scoreTeam1Text, 10) || 0 },
+                    { name: mapTeam2Name, score: parseInt(scoreTeam2Text, 10) || 0 }
+                ],
+                played: isPlayed,
+                statsPerMap: {
+                    overview: overviewStatsForThisMap,
+                    performance: {}, // Se llenará después
+                    economy: {}    // Se llenará después
+                },
+                rounds: rounds
+            });
+        });
+        
+         console.log("[scrapeMatchDetails] Contenido de matchData.maps después de procesar Overview.html:", JSON.stringify(matchData.maps, null, 2)); // Log detallado
+
+        // ======== LLAMADAS A PARSEO DE PERFORMANCE Y ECONOMY (A implementar/revisar después) ========
+        if (performancePageHtml && typeof parsePerformancePage === 'function') { // performancePageHtml es Cheerio object
+            parsePerformancePage(performancePageHtml, matchData); // Pasamos matchData completo para que lo modifique
+        }
+
+        if (economyPageHtml && typeof parseEconomyPage === 'function') { // economyPageHtml es Cheerio object
+            parseEconomyPage(economyPageHtml, matchData); // Pasamos matchData completo
+        }
+
+        return matchData;
+
+    } catch(error) {
+        console.error("Error al extraer datos del partido:", error.message); 
+    }
+} // Fin de scrapeMatchDetails
 // --- INICIO: Función auxiliar para parsear UNA SOLA tabla de matriz de duelos ---
 function parseSingleDuelMatrixTable(tableCheerioElement, pageCheerioInstance) {
     const singleMatrixData = [];
@@ -336,7 +541,7 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
 
     if (dataRows.length < 2) {
         console.error(`[parseEcoRoundDetailsTable] No se encontraron suficientes filas de datos de equipo (esperaba 2, encontré ${dataRows.length}).`);
-        // console.log("HTML de la tabla de economía que se está parseando:", tableCheerio.html()); // Descomenta para depurar
+        console.log("HTML de la tabla de economía que se está parseando:", tableCheerio.html()); // Descomenta para depurar
         return;
     }
 
@@ -551,272 +756,5 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
                                             // mapsArray (matchData.maps) se actualiza por referencia
 }
 // Función principal para extraer los detalles del partido
-const scrapeMatchDetails = async (matchId) =>{
-    const matchUrl = `${vlrgg_url}/${matchId}`;
-    let htmlContent;
 
-    try {
-        console.log(`[resultadosService] Iniciando scraping para el partido: ${matchUrl}`);
-        htmlContent = await rp(matchUrl); // 1. Obtener HTML
-        console.log(`[resultadosService] HTML obtenido para ${matchId}.`);
-
-        const $ = cheerio.load(htmlContent); // 2. Cargar HTML en Cheerio y definir '$'
-        console.log(`[resultadosService] Cheerio cargado para ${matchId}.`);
-        
-        let matchData = {
-            matchId: matchId,
-            generalInfo: { // Nueva sección para info global del partido
-                team1: { name: null, score: null },
-                team2: { name: null, score: null },
-                tournament: null,
-                date: null,
-            },
-            statsAllMaps: { // Nueva sección para stats agregadas de todos los mapas
-                overview: [],
-                performance: {}, // Se llenará después
-                economy: {}    // Se llenará después
-            },
-            maps: [] // Aquí irán los detalles de cada mapa
-        };
-        // --- INICIO DE TU LÓGICA PARA EXTRAER NOMBRES Y MARCADORES DE EQUIPOS ---
-        // Ahora '$' está definido y listo para usarse.
-        let team1Name = '';
-        let team2Name = '';
-        let team1Score = '';
-        let team2Score = '';
-        // CÓDIGO PARA EXTRAER LINKS DE PERFORMANCE Y ECONOMY 
-
-        const performanceTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="performance"]';
-        const performanceHref = $(performanceTabSelector).attr('href');
-        let performanceFullUrl = null;
-
-        if (performanceHref) {
-            // Asegurarse de que no se duplique la base si el href ya fuera absoluto (poco probable en vlr.gg)
-            performanceFullUrl = performanceHref.startsWith('http') ? performanceHref : vlrgg_url + performanceHref;
-            console.log(`Link de Performance (game=all) encontrado: ${performanceFullUrl}`);
-        } else {
-            console.log("Link de Performance (game=all) NO encontrado.");
-        }
-
-        const economyTabSelector = 'div.vm-stats[data-game-id="all"] .vm-stats-tabnav a.vm-stats-tabnav-item[data-tab="economy"]';
-        const economyHref = $(economyTabSelector).attr('href');
-        let economyFullUrl = null;
-
-        if (economyHref) {
-            economyFullUrl = economyHref.startsWith('http') ? economyHref : vlrgg_url + economyHref;
-            console.log(`Link de Economy (game=all) encontrado: ${economyFullUrl}`);
-        } else {
-            console.log("Link de Economy (game=all) NO encontrado.");
-        }
-
-        // ======== INICIO DE NUEVAS PETICIONES HTTP PARA PERFORMANCE Y ECONOMY ========
-        let performancePageHtml = null;
-        if (performanceFullUrl) {
-            try {
-                console.log(`Accediendo a URL de Performance: ${performanceFullUrl}`);
-                performancePageHtml = await rp({
-                    uri: performanceFullUrl,
-                    transform: (body) => cheerio.load(body),
-                });
-                console.log("Página de Performance cargada.");
-            } catch (tabError) {
-                console.error(`Error al cargar la página de Performance ${performanceFullUrl}:`, tabError.message);
-            }
-        }
-
-        let economyPageHtml = null;
-        if (economyFullUrl) {
-            try {
-                console.log(`Accediendo a URL de Economy: ${economyFullUrl}`);
-                economyPageHtml = await rp({
-                    uri: economyFullUrl,
-                    transform: (body) => cheerio.load(body),
-                });
-                console.log("Página de Economy cargada.");
-            } catch (tabError) {
-                console.error(`Error al cargar la página de Economy ${economyFullUrl}:`, tabError.message);
-            }
-        }
-        
-        const tournament = $(".match-header-event div[style='font-weight: 700;']").text().trim();
-        matchData.generalInfo.tournament = $('.match-header-event > div > div').eq(0).text().trim() || "Torneo no especificado";
-        const stage = $(".match-header-event-series").text().trim();
-        const eventDateUnix = $('.moment-tz-convert').eq(0).data('unix');
-        matchData.generalInfo.date = eventDateUnix ? new Date(eventDateUnix * 1000).toISOString() : "Fecha no disponible";
-
-
-
-        // Obtener nombres de los equipos
-        team1Name = $('.match-header-link.mod-1 .wf-title-med').first().text().trim();
-        matchData.generalInfo.team1.name = $('.match-header-link-name .team').eq(0).find('div').eq(0).text().trim() || "Equipo 1 no encontrado";
-        team2Name = $('.match-header-link.mod-2 .wf-title-med').first().text().trim();
-        matchData.generalInfo.team2.name = $('.match-header-link-name .team').eq(1).find('div').eq(0).text().trim() || "Equipo 2 no encontrado";
-        console.log(`[resultadosService] Equipo 1: ${team1Name}, Equipo 2: ${team2Name}`);
-
-        // Usamos la lógica robusta para los marcadores que discutimos
-        const scoreSpans = $('.match-header-vs-score .js-spoiler span')
-                            .filter((i, el) => $(el).text().trim() !== ':' && !isNaN(parseInt($(el).text().trim())));
-
-        if (scoreSpans.length === 2) {
-            team1Score = $(scoreSpans[0]).text().trim();
-            matchData.generalInfo.team1.score = parseInt($('.match-header-vs .score').eq(0).text().trim(), 10) || 0;
-            team2Score = $(scoreSpans[1]).text().trim();
-            matchData.generalInfo.team2.score = parseInt($('.match-header-vs .score').eq(1).text().trim(), 10) || 0;
-            console.log(`[resultadosService] Marcadores: ${team1Name} ${team1Score} - ${team2Name} ${team2Score}`);
-        } else {
-            console.error(`[resultadosService] Error al extraer marcadores para ${matchId}: No se encontraron los dos spans de marcador esperados. Spans encontrados: ${scoreSpans.length}`);
-            // Es útil loguear lo que sí se encontró para depurar:
-            // $('.match-header-vs-score .js-spoiler span').each((idx, element) => {
-            //     console.log(`[resultadosService] Debug Score Span ${idx}: "${$(element).text().trim()}"`);
-            // });
-            team1Score = 'N/A'; // Valor por defecto o manejo de error
-            team2Score = 'N/A';
-        }
-        
-        const format = $(".match-header-vs-note").eq(1).text().trim();
-        const mapPicksBans = $(".match-header-note").text().trim();
-        
-        
-        $(".vm-stats-game").each((mapIndex, mapElement) => {
-            const mapContext = $(mapElement);
-            const gameId = mapContext.attr('data-game-id');
-
-            if (!gameId || gameId === 'all') {
-                console.log(`[scrapeMatchDetails] Skipping general stats container (game-id: 'all') at index ${mapIndex}.`);
-                return;
-            }
-
-            // Extraer nombre del mapa
-            const mapNameRaw = mapContext.find(".map div[style*='font-weight: 700']").text().trim();
-            let currentMapName = mapNameRaw.replace(/\s+PICK$/, "").trim(); // 'current' para evitar conflicto si tienes otra var 'mapName'
-
-            // Extraer marcadores para determinar si se jugó
-            const scoreTeam1Text = mapContext.find(".score").eq(0).text().trim();
-            const scoreTeam2Text = mapContext.find(".score").eq(1).text().trim();
-            const roundsPlayedCount = mapContext.find(".vlr-rounds .vlr-rounds-row-col").length;
-
-            let isPlayed = true; // Asumir que se jugó por defecto
-
-            if (!currentMapName || currentMapName.trim() === '') {
-                isPlayed = false;
-                currentMapName = `Mapa No Identificado ${mapIndex + 1}`; // Nombre placeholder
-                console.log(`[scrapeMatchDetails] Mapa en índice ${mapIndex} (game-id: ${gameId}) no tiene nombre, marcado como no jugado.`);
-            } else if (scoreTeam1Text === '0' && scoreTeam2Text === '0' && roundsPlayedCount === 0) {
-                // Si el marcador es 0-0 Y no hay rondas listadas, probablemente no se jugó.
-                // vlr.gg a veces muestra mapas "elegidos pero no jugados" así.
-                // O si la sección del mapa está presente pero vacía de detalles de rondas.
-                console.log(`[scrapeMatchDetails] Mapa "${currentMapName}" (game-id: ${gameId}) parece no jugado (0-0 y sin rondas).`);
-                isPlayed = false; // Puedes decidir si quieres marcarlo como no jugado o no,
-                                // ya que tu lógica de parseo de economía ya maneja bien la ausencia de datos.
-                                // Si lo marcas como 'false', puedes usarlo para saltar el parseo de performance/economy.
-            }
-
-            
-
-            const duration = mapContext.find(".map-duration").text().trim();
-
-            const teams = [
-                {
-                    name: mapContext.find(".team-name").eq(0).text().trim() || "Equipo 1 no especificado",
-                    score: mapContext.find(".score").eq(0).text().trim() || "0",
-                },
-                {
-                    name: mapContext.find(".team-name").eq(1).text().trim() || "Equipo 2 no especificado",
-                    score: mapContext.find(".score").eq(1).text().trim() || "0",
-                },
-            ];const rounds = [];
-            if (isPlayed) {
-            mapContext.find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
-                const roundElement = $(roundEl); // Es buena práctica guardar el elemento jQuery/Cheerio
-                const team1Sq = roundElement.find(".rnd-sq").eq(0);
-                const team2Sq = roundElement.find(".rnd-sq").eq(1);
-                
-                const team1Win = team1Sq.hasClass("mod-win");
-                const team2Win = team2Sq.hasClass("mod-win");
-
-                const roundNumber = parseInt($(roundEl).find(".rnd-num").text().trim(), 10) || j + 1;
-        
-                let winningTeam = null;
-                let result = null;
-                let method = null;
-        
-                if (team1Win) {
-                    winningTeam = teams[0].name; // Asumes que teams[0] es el de la izquierda
-                    method = team1Sq.find("img").attr("src");
-
-                    if (team1Sq.hasClass("mod-ct")) {
-                        result = "ct-win";
-                    } else if (team1Sq.hasClass("mod-t"))
-                        result = "t-win";
-                } else if (team2Win) {
-                    winningTeam = teams[1].name; // Asumes que teams[1] es el de la derecha
-                    method = team2Sq.find("img").attr("src");
-
-                    if (team2Sq.hasClass("mod-ct")) {
-                        result = "ct-win";
-                    } else if (team2Sq.hasClass("mod-t")) {
-                        result = "t-win";
-                    }
-                }
-        
-                rounds.push({
-                    roundNumber,
-                    winner: winningTeam,
-                    result: result,
-                    method: method || "no-time",
-            });
-         });
-            }
-
-            let overviewStatsForThisMap = [];
-            const overviewTableForThisMap = mapContext.find('table.wf-table-inset.mod-overview');
-            if (overviewTableForThisMap.length > 0) {
-                overviewStatsForThisMap = scrapeOverview(overviewTableForThisMap, `overview_map_${gameId}`);
-                // console.log(`[scrapeMatchDetails] Overview stats for map ${gameId} count: ${overviewStatsForThisMap.length}`);
-            } else {
-                // console.log(`[scrapeMatchDetails] No se encontró tabla de overview para el mapa ${gameId}`);
-            }
-            // Agregar la información del mapa y las rondas al matchData
-            matchData.maps.push({
-            mapName: currentMapName.replace(/\s+PICK$/, "").trim(),
-            gameId: gameId, // ¡IMPORTANTE!
-            duration: duration,
-            teams: [ // Asegúrate que team1Name y team2Name son los globales, o si hay nombres específicos por mapa
-                { name: matchData.generalInfo.team1.name, score: parseInt(scoreTeam1Text, 10) || 0 },
-                { name: matchData.generalInfo.team2.name, score: parseInt(scoreTeam2Text, 10) || 0 }
-            ],
-            played: isPlayed, // Esta variable se determina justo después en tu código (línea 761), está bien
-            statsPerMap: {
-                overview: overviewStatsForThisMap, // Stats de overview específicas de este mapa
-                performance: {}, // Se llenará después
-                economy: {}    // Se llenará después
-            },
-            rounds: rounds // Los detalles de las rondas (resultado, etc.)
-            });
-            console.log("[scrapeMatchDetails] Contenido de matchData.maps:", matchData.maps);
-  
-        });
-
-        // ======== INICIO: LLAMADAS A LAS NUEVAS FUNCIONES DE PARSEO Y ACTUALIZACIÓN DE matchData ========
-        if (performancePageHtml) {
-            const performanceData = parsePerformancePage(performancePageHtml, matchData.maps);
-            matchData.performance_general = performanceData.overall;
-            // parsePerformancePage actualiza matchData.maps por referencia
-        }
-
-        if (economyPageHtml) {
-            console.log(`[scrapeMatchDetails] Antes de llamar a parseEconomyPage:`);
-            console.log(`  matchData.maps (tipo): ${typeof matchData.maps}, ¿es array?: ${Array.isArray(matchData.maps)}`);
-            console.log(`  team1Name (valor): "${team1Name}", (tipo): ${typeof team1Name}`);
-            console.log(`  team2Name (valor): "${team2Name}", (tipo): ${typeof team2Name}`);
-        
-            const econData = parseEconomyPage(economyPageHtml, matchData.maps, team1Name, team2Name);
-            matchData.economy_general = econData.overall;
-        }
-
-        return matchData;
-    } catch(error) {
-        console.error("Error al extraer datos del partido:", error);
-    }
-}
 module.exports = { scrapeMatchDetails /*, scrapeOverview si la exportas también */ };
