@@ -200,7 +200,7 @@ const scrapeMatchDetails = async (matchId) => {
             console.warn("[resultadosService] No se encontró el texto de picks y bans.");
         }
 
-        matchData.generalInfo.matchFormat = $(".match-header-vs-note").first().text().trim() || "Formato no especificado";
+        matchData.generalInfo.matchFormat = $(".match-header-vs-note").second().text().trim() || "Formato no especificado";
         console.log(`[resultadosService] Formato de partido extraído: ${matchData.generalInfo.matchFormat}`);
 
         
