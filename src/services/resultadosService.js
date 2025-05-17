@@ -236,7 +236,7 @@ const scrapeMatchDetails = async (matchId) => {
             const roundNumber = parseInt(roundNumberText, 10);
 
             // Solo procesar si el número de ronda es válido
-            if (isNaN(roundNumber) || roundNumber <= 0) {
+            if (isNaN(roundNumber) || roundNumber <= 0 || (!team1Win && !team2Win)) {
                 // console.warn(`[scrapeMatchDetails] Ronda con número inválido '${roundNumberText}' saltada para mapa ${currentMapName}`);
                 return; // Saltar esta iteración si no hay número de ronda válido
             }
@@ -421,6 +421,7 @@ function parseSingleDuelMatrixTable(tableCheerioElement, pageCheerioInstance) {
                     const deathsText = duelStatsDivs.eq(1).text().trim();
                     const balanceText = duelStatsDivs.eq(2).text().trim();
 
+                if (killsText !== '-' || deathsText !== '-' || balanceText !== '-'){
                     singleMatrixData.push({
                         player_row: { name: rowPlayerName, team: rowPlayerTeamTag },
                         player_col: { name: currentColumnPlayer.name, team: currentColumnPlayer.team },
@@ -428,6 +429,7 @@ function parseSingleDuelMatrixTable(tableCheerioElement, pageCheerioInstance) {
                         col_player_kills_row_player: deathsText === '-' ? null : parseInt(deathsText, 10),
                         balance: balanceText === '-' ? null : parseInt(balanceText.replace('+', ''), 10)
                     });
+                }
                 }
             }
         });
@@ -465,9 +467,6 @@ function parseSingleAdvStatsTable(advStatsTableCheerio, pageCheerioInstance) {
         playerData.clutches = {
             "1v1": getStat(6), "1v2": getStat(7), "1v3": getStat(8), "1v4": getStat(9), "1v5": getStat(10)
         };
-        // Plants y Defuses (índices de celda 12 y 13)
-        playerData.plants = getStat(12);
-        playerData.defuses = getStat(13);
         
         if (playerData.playerName) {
             advancedPlayerStatsList.push(playerData);
@@ -674,95 +673,113 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
         return;
     }
     
+    function mapBuySymbolToType(symbol) {
+        const s = symbol.trim();
+        if (s === '$$$') return "Full Buy";
+        if (s === '$$') return "Semi Buy"; // Corregido de "Semi-buy" a "Semi Buy" para consistencia
+        if (s === '$') return "Semi Eco"; // Corregido de "Semi-eco" a "Semi Eco"
+        if (s === '' || s === '_') return "Eco Buy"; // Considerar string vacío o '_' como Eco
+        // Para rondas de pistola, usualmente se identifican por el número de ronda (1 y 13)
+        // VLR puede no poner un símbolo específico de 'pistol' aquí, sino que podría ser 'Eco' o vacío.
+        // Dejaremos que la lógica de número de ronda maneje la etiqueta "Pistol Round" si es necesario más adelante.
+        return "Unknown Buy"; // Fallback
+    }
+
     // Iterar sobre todas las filas <tr> de la tabla
     tableCheerio.find('tr').each((rowIndex, rowElement) => {
         const row = pageCheerioInstance(rowElement);
         // Iterar sobre las celdas <td> de datos de ronda en esta fila
         // Excluimos la primera celda si es la que tiene los nombres de los equipos
-        row.find('td').slice(rowIndex === 0 ? 1 : 0).each((cellIndex, cellElement) => { // Si es la primera fila (cabecera), slice(1). Sino, desde la primera celda de datos.
-                                                                                        // ESTO NECESITA AJUSTE: la cabecera es <th>, las filas de datos son <tr><td>...</td></tr>
+        row.find('td').slice(1).each((cellIndex, cellElement) => {
             const roundCell = pageCheerioInstance(cellElement);
             const roundNumText = roundCell.find('.round-num').first().text().trim();
             const roundNum = parseInt(roundNumText, 10);
 
             if (isNaN(roundNum) || roundNum <= 0) {
-                // No es una celda de ronda válida o es la celda de etiquetas de equipo
+                // No es una celda de ronda válida
                 return; // Saltar esta celda
             }
 
-            const banks = roundCell.find('.bank');
-            const buySquares = roundCell.find('.rnd-sq'); // Para determinar ganador y tipo de compra/resultado
+            // Extraer los tipos de compra
+            const buySquares = roundCell.find('.rnd-sq');
+            let buyTypeSymbolTeam1 = ""; // Para el equipo de ARRIBA en la celda
+            let buyTypeSymbolTeam2 = ""; // Para el equipo de ABAJO en la celda
 
-            if (banks.length < 2 || buySquares.length < 2) {
-                console.warn(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, Ronda ${roundNum}: Estructura de celda de ronda inesperada. Bancos: ${banks.length}, Cuadrados de Compra: ${buySquares.length}. Saltando.`);
-                return; // Saltar esta celda si no tiene la estructura esperada
+            if (buySquares.length >= 1) {
+                buyTypeSymbolTeam1 = pageCheerioInstance(buySquares.eq(0)).text().trim();
+            }
+            if (buySquares.length >= 2) {
+                buyTypeSymbolTeam2 = pageCheerioInstance(buySquares.eq(1)).text().trim();
             }
 
-            const parseBankValue = (bankText) => {
-                if (!bankText) return 0;
-                const text = bankText.toLowerCase().trim(); // Añadido trim() aquí también
-                let value;
-                if (text.includes('k')) {
-                    value = parseFloat(text.replace('k', '')) * 1000;
-                } else {
-                    // Quitar cualquier cosa que no sea dígito o punto decimal para el caso de "2,000" o "2.000"
-                    // Pero vlr.gg usa "2k" o "2000", no comas.
-                    const cleanedText = text.replace(/[^0-9.]/g, '');
-                    value = parseFloat(cleanedText);
-                }
-                return isNaN(value) ? 0 : Math.round(value); // Redondear por si acaso (ej. 8.2k -> 8200)
-            };
-            const bankTeam1Text = pageCheerioInstance(banks.eq(0)).text(); // Banco del equipo de ARRIBA
-            const bankTeam2Text = pageCheerioInstance(banks.eq(1)).text(); // Banco del equipo de ABAJO
+            // Mapear símbolos a tipos de compra legibles
+            let buyTypeTeam1 = mapBuySymbolToType(buyTypeSymbolTeam1);
+            let buyTypeTeam2 = mapBuySymbolToType(buyTypeSymbolTeam2);
 
-            const bankTeam1 = parseBankValue(bankTeam1Text);
-            const bankTeam2 = parseBankValue(bankTeam2Text);
+            // Lógica especial para rondas de pistola
+            if (roundNum === 1 || roundNum === 13) { // Asumiendo 12 rondas por mitad
+                buyTypeTeam1 = "Pistol Round";
+                buyTypeTeam2 = "Pistol Round";
+            }
             
-            console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, Ronda ${roundNum}: Banco Sup. (text: "${bankTeam1Text.trim()}", parsed: ${bankTeam1}), Banco Inf. (text: "${bankTeam2Text.trim()}", parsed: ${bankTeam2})`);
+            console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, Ronda ${roundNum}: Símbolos Buy T1='${buyTypeSymbolTeam1}', T2='${buyTypeSymbolTeam2}' -> Tipos T1='${buyTypeTeam1}', T2='${buyTypeTeam2}'`);
 
             const targetRound = mapRoundsArrayToUpdate.find(r => r.roundNumber === roundNum);
-           if (targetRound) {
-    const keyTeam1Bank = `${equipo1NombreCanonico.replace(/\s+/g, '')}Bank`;
-    const keyTeam2Bank = `${equipo2NombreCanonico.replace(/\s+/g, '')}Bank`;
+            if (targetRound) {
+                // Ya no necesitamos 'bank', así que no se definen claves para ello.
+                // En su lugar, añadimos los tipos de compra.
+                const keyTeam1BuyType = `${equipo1NombreCanonico.replace(/\s+/g, '')}BuyType`;
+                const keyTeam2BuyType = `${equipo2NombreCanonico.replace(/\s+/g, '')}BuyType`;
 
-    const cName1Lower = equipo1NombreCanonico.toLowerCase();
-    const cName2Lower = equipo2NombreCanonico.toLowerCase();
+                const cName1Lower = equipo1NombreCanonico.toLowerCase();
+                const cName2Lower = equipo2NombreCanonico.toLowerCase();
+                
+                // Usar los nombres de equipo extraídos de las ETIQUETAS de la tabla de economía para el matching de orden
+                // Si no se pudieron extraer, teamNameInTable1/2 serán null y el matching podría fallar o ser menos preciso.
+                const tagArribaLower = teamNameInTable1; 
+                const tagAbajoLower = teamNameInTable2;
 
-    const tagArribaLower = teamNameInTable1; // Ya debería estar en minúsculas si lo hiciste al extraer
-    const tagAbajoLower = teamNameInTable2;   // Ya debería estar en minúsculas
+                let assigned = false;
 
-    let assigned = false;
+                if (tagArribaLower && tagAbajoLower) { // Solo intentar el matching si tenemos los tags de la tabla
+                    console.log(`[parseEcoRoundDetailsTable] Ronda ${roundNum} - Intentando Coincidencia para tipo de compra:`);
+                    console.log(`  Nombres Canónicos: E1='${cName1Lower}', E2='${cName2Lower}'`);
+                    console.log(`  Tags de Tabla Eco: Arriba='${tagArribaLower}', Abajo='${tagAbajoLower}'`);
 
-    // Log para depuración de las entradas de la comparación
-    console.log(`[parseEcoRoundDetailsTable] Ronda ${roundNum} - Intentando Coincidencia:`);
-    console.log(`  Nombres Canónicos: E1='${cName1Lower}', E2='${cName2Lower}'`);
-    console.log(`  Tags de Tabla Eco: Arriba='${tagArribaLower}', Abajo='${tagAbajoLower}'`);
+                    if (fuzzyMatchTeamName(cName1Lower, tagArribaLower) && fuzzyMatchTeamName(cName2Lower, tagAbajoLower)) {
+                        targetRound[keyTeam1BuyType] = buyTypeTeam1;
+                        targetRound[keyTeam2BuyType] = buyTypeTeam2;
+                        assigned = true;
+                        console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Tipos de Compra asignados (A). ${equipo1NombreCanonico}(${tagArribaLower})=${buyTypeTeam1}, ${equipo2NombreCanonico}(${tagAbajoLower})=${buyTypeTeam2}`);
+                    } else if (fuzzyMatchTeamName(cName2Lower, tagArribaLower) && fuzzyMatchTeamName(cName1Lower, tagAbajoLower)) {
+                        targetRound[keyTeam2BuyType] = buyTypeTeam1; // El tipo de compra del equipo de ARRIBA va al equipo 2 canónico
+                        targetRound[keyTeam1BuyType] = buyTypeTeam2; // El tipo de compra del equipo de ABAJO va al equipo 1 canónico
+                        assigned = true;
+                        console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Tipos de Compra asignados (B - Invertido). ${equipo2NombreCanonico}(${tagArribaLower})=${buyTypeTeam1}, ${equipo1NombreCanonico}(${tagAbajoLower})=${buyTypeTeam2}`);
+                    }
+                }
 
-    // Intento 1: Tag de Arriba es Equipo 1 Canónico, Tag de Abajo es Equipo 2 Canónico
-    if (fuzzyMatchTeamName(cName1Lower, tagArribaLower) && fuzzyMatchTeamName(cName2Lower, tagAbajoLower)) {
-        targetRound[keyTeam1Bank] = bankTeam1;
-        targetRound[keyTeam2Bank] = bankTeam2;
-        assigned = true;
-        console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Bancos asignados (A). ${equipo1NombreCanonico}(${tagArribaLower})=${bankTeam1}, ${equipo2NombreCanonico}(${tagAbajoLower})=${bankTeam2}`);
-    }
-    // Intento 2: Tag de Arriba es Equipo 2 Canónico, Tag de Abajo es Equipo 1 Canónico
-    else if (fuzzyMatchTeamName(cName2Lower, tagArribaLower) && fuzzyMatchTeamName(cName1Lower, tagAbajoLower)) {
-        targetRound[keyTeam2Bank] = bankTeam1;
-        targetRound[keyTeam1Bank] = bankTeam2;
-        assigned = true;
-        console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Bancos asignados (B - Invertido). ${equipo2NombreCanonico}(${tagArribaLower})=${bankTeam1}, ${equipo1NombreCanonico}(${tagAbajoLower})=${bankTeam2}`);
-    }
 
-    if (!assigned) {
-        console.warn(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, Ronda ${roundNum}: ADVERTENCIA CRÍTICA - No se pudo hacer coincidir par de tags de tabla eco ('${tagArribaLower}', '${tagAbajoLower}') con par de nombres canónicos ('${cName1Lower}', '${cName2Lower}'). Asignación RAW.`);
-        const rawBankKeyTop = `${tagArribaLower.replace(/\s+/g, '')}Bank_FromEcoTable`;
-        const rawBankKeyBottom = `${tagAbajoLower.replace(/\s+/g, '')}Bank_FromEcoTable`;
-        targetRound[rawBankKeyTop] = bankTeam1;
-        targetRound[rawBankKeyBottom] = bankTeam2;
-    }
-} else {
-    console.warn(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}: No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate (proveniente de Overview). Datos económicos para esta ronda no se integrarán.`);
-}
+                if (!assigned) {
+                    console.warn(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, Ronda ${roundNum}: ADVERTENCIA - No se pudo hacer coincidir par de tags de tabla eco ('${tagArribaLower}', '${tagAbajoLower}') con par de nombres canónicos ('${cName1Lower}', '${cName2Lower}') para tipo de compra. Asignando con nombres genéricos si los tags existen.`);
+                    // Como fallback, si los tags de la tabla existen pero no coinciden, guardarlos con esos tags
+                    if (tagArribaLower) {
+                        targetRound[`${tagArribaLower.replace(/\s+/g, '')}BuyType_FromEcoTable`] = buyTypeTeam1;
+                    } else {
+                         targetRound[`UnknownTeamUpBuyType_FromEcoTable`] = buyTypeTeam1; // Si ni el tag se pudo leer
+                    }
+                    if (tagAbajoLower) {
+                        targetRound[`${tagAbajoLower.replace(/\s+/g, '')}BuyType_FromEcoTable`] = buyTypeTeam2;
+                    } else {
+                        targetRound[`UnknownTeamDownBuyType_FromEcoTable`] = buyTypeTeam2;
+                    }
+                    // Si incluso los tags de la tabla (teamNameInTable1/2) no se pudieron obtener,
+                    // esta asignación de fallback será con "nullBuyType_FromEcoTable", lo cual no es ideal.
+                    // Se podría considerar no añadir nada si el matching falla completamente.
+                }
+            } else {
+                console.warn(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}: No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate (proveniente de Overview). Datos económicos (tipo de compra) para esta ronda no se integrarán.`);
+            }
         });
     });
     console.log(`[parseEcoRoundDetailsTable] Finalizado para mapa: ${nombreDelMapaActual}`);
