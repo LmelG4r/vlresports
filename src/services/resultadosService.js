@@ -115,9 +115,9 @@ const scrapeMatchDetails = async (matchId) => {
                 team1: { name: null, score: null },
                 team2: { name: null, score: null },
                 tournament: null,
-                dateUtc: null, // <--- NUEVO CAMPO para la fecha UTC
+                date: null, // <--- NUEVO CAMPO para la fecha 
                 matchFormat: null, // <--- NUEVO CAMPO para el formato (BoX)
-                picksAndBans: [] // <--- NUEVO CAMPO para picks y bans
+                picksAndBansRaw: null// <--- NUEVO CAMPO para picks y bans
             },
             statsAllMaps: {
                 overview: [],
@@ -165,76 +165,41 @@ const scrapeMatchDetails = async (matchId) => {
                 try {
                     const dateObject = new Date(utcTimestampString.replace(" ", "T") + "Z"); // Asegurar formato ISO para el constructor de Date
                     if (!isNaN(dateObject)) {
-                         matchData.generalInfo.dateUtc = dateObject.toISOString();
-                         console.log(`[resultadosService] Fecha UTC extraída: ${matchData.generalInfo.dateUtc}`);
+                        matchData.generalInfo.date = dateObject.toISOString().split('T')[0]; 
+                        console.log(`[resultadosService] Fecha extraída: ${matchData.generalInfo.date}`);
                     } else {
                         console.warn(`[resultadosService] No se pudo parsear la fecha desde data-utc-ts: ${utcTimestampString}`);
-                        matchData.generalInfo.dateUtc = "Fecha no parseable";
+                        matchData.generalInfo.date = "Fecha no parseable";
                     }
                 } catch (e) {
                      console.error(`[resultadosService] Error parseando la fecha: ${utcTimestampString}`, e);
-                     matchData.generalInfo.dateUtc = "Error al parsear fecha";
+                     matchData.generalInfo.date = "Error al parsear fecha";
                 }
             } else {
                 console.warn("[resultadosService] Atributo data-utc-ts encontrado pero vacío.");
-                matchData.generalInfo.dateUtc = "Fecha no disponible (atributo vacío)";
+                matchData.generalInfo.date = "Fecha no disponible (atributo vacío)";
             }
         } else {
-            // Fallback si el elemento .moment-tz-convert[data-utc-ts] no se encuentra
-            // (Tu código anterior usaba .moment-tz-convert y data-unix, que también es una opción si data-utc-ts no siempre está)
-            const eventDateUnix = $('.moment-tz-convert').eq(0).data('unix'); // Intenta con data-unix como fallback
+            const eventDateUnix = $('.moment-tz-convert').eq(0).data('unix');
             if (eventDateUnix) {
-                matchData.generalInfo.dateUtc = new Date(eventDateUnix * 1000).toISOString();
-                console.log(`[resultadosService] Fecha UTC extraída (fallback data-unix): ${matchData.generalInfo.dateUtc}`);
+                // ---- MODIFICACIÓN PARA EL FORMATO DE FECHA (FALLBACK) ----
+                matchData.generalInfo.date = new Date(eventDateUnix * 1000).toISOString().split('T')[0];
+                console.log(`[resultadosService] Fecha extraída (fallback data-unix): ${matchData.generalInfo.date}`);
             } else {
                 console.warn("[resultadosService] No se pudo extraer la fecha del partido (ni data-utc-ts ni data-unix).");
-                matchData.generalInfo.dateUtc = "Fecha no disponible";
+                matchData.generalInfo.date = "Fecha no disponible";
             }
         }
         
-        const picksBansText = $(".match-header-note").text().trim();
-        if (picksBansText) {
-            console.log(`[resultadosService] Texto de Picks/Bans: "${picksBansText}"`);
-            const actions = picksBansText.split(';').map(action => action.trim()).filter(action => action !== "");
-            
-            actions.forEach(actionString => {
-                const parts = actionString.split(/\s+/); // Dividir por espacios
-                let pickBanEntry = { team: null, action: null, map: null, fullString: actionString };
-
-                if (parts.length >= 2) { // Necesita al menos 'ACCIÓN MAPA' o 'EQUIPO ACCIÓN MAPA'
-                    if (parts[parts.length - 1].toLowerCase() === 'remains' && parts.length >= 2) {
-                        // Formato: "MAPA remains"
-                        pickBanEntry.map = parts.slice(0, -1).join(" "); // Todo antes de "remains" es el mapa
-                        pickBanEntry.action = "remains";
-                    } else if (parts[1].toLowerCase() === 'ban' || parts[1].toLowerCase() === 'pick') {
-                        // Formato: "EQUIPO ACCIÓN MAPA"
-                        pickBanEntry.team = parts[0];
-                        pickBanEntry.action = parts[1].toLowerCase();
-                        pickBanEntry.map = parts.slice(2).join(" "); // El resto es el nombre del mapa
-                    } else if (parts[0].toLowerCase() === 'ban' || parts[0].toLowerCase() === 'pick') {
-                        // Podría haber un caso raro sin equipo explícito (aunque no en tu ejemplo)
-                        // Formato: "ACCIÓN MAPA" - menos probable para picks/bans asignados
-                        pickBanEntry.action = parts[0].toLowerCase();
-                        pickBanEntry.map = parts.slice(1).join(" ");
-                         console.warn(`[resultadosService] Pick/Ban sin equipo explícito: "${actionString}"`);
-                    } else {
-                        console.warn(`[resultadosService] No se pudo parsear la acción de pick/ban: "${actionString}"`);
-                        // Guardar la cadena original si no se puede parsear
-                        pickBanEntry.action = "unknown";
-                        pickBanEntry.map = actionString; // Guardar toda la cadena como mapa en este caso de error
-                    }
-                } else {
-                     console.warn(`[resultadosService] Parte de pick/ban demasiado corta para parsear: "${actionString}"`);
-                     pickBanEntry.action = "unknown_short";
-                     pickBanEntry.map = actionString;
-                }
-                matchData.generalInfo.picksAndBans.push(pickBanEntry);
-            });
-             console.log(`[resultadosService] Picks/Bans procesados:`, JSON.stringify(matchData.generalInfo.picksAndBans, null, 2));
+        const picksBansRawText = $(".match-header-note").text().trim();
+        if (picksBansRawText) {
+            matchData.generalInfo.picksAndBansRaw = picksBansRawText;
+            console.log(`[resultadosService] String de Picks/Bans: "${matchData.generalInfo.picksAndBansRaw}"`);
         } else {
+            matchData.generalInfo.picksAndBansRaw = "Picks/Bans no especificados";
             console.warn("[resultadosService] No se encontró el texto de picks y bans.");
         }
-        
+
         matchData.generalInfo.matchFormat = $(".match-header-vs-note").first().text().trim() || "Formato no especificado";
         console.log(`[resultadosService] Formato de partido extraído: ${matchData.generalInfo.matchFormat}`);
 
