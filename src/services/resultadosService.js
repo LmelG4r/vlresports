@@ -28,63 +28,61 @@ function scrapeOverview($, tableCheerioObject, statType) { // statType es opcion
         }
 
         const stats = {
-            rating: {
+            Rating: {
                 both: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-stat").eq(0).find(".mod-side.mod-ct").text().trim() || "0",
             },
-            acs: {
+            Acs: {
                 both: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-stat").eq(1).find(".mod-side.mod-ct").text().trim() || "0",
             },
-            kills: { // Kills (K)
+            Kills: { // Kills (K)
                 both: playerRow.find(".mod-vlr-kills .mod-side.mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-vlr-kills .mod-side.mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-vlr-kills .mod-side.mod-ct").text().trim() || "0",
             },
-            deaths: { // Deaths (D)
+            Deaths: { // Deaths (D)
                 both: playerRow.find(".mod-vlr-deaths .mod-both").text().trim() || "0", // El selector es .mod-vlr-deaths, no .mod-stat
                 attack: playerRow.find(".mod-vlr-deaths .mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-vlr-deaths .mod-ct").text().trim() || "0",
             },
-            assists: { // Assists (A) - eq(2) si K/D no se cuenta como mod-stat para el índice
-                // Revisa el HTML para el índice correcto de las stats. Si K y D son .mod-stat, los índices cambian.
-                // Asumiendo K/D NO son .mod-stat y están separados:
-                // Rating (0), ACS (1), Assists (2), K/D Diff (3), KAST (4), ADR (5), HS% (6), FK (7), FD (8)
-                both: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(2).find(".mod-side.mod-ct").text().trim() || "0",
+            Assists: { // Assists (A)
+                
+                both: playerRow.find(".mod-stat").eq(4).find(".mod-both").text().trim() || "0%",
+                attack: playerRow.find(".mod-stat").eq(4).find(".mod-t").text().trim() || "0%",
+                defend: playerRow.find(".mod-stat").eq(4).find(".mod-ct").text().trim() || "0%",
             },
             KillsDeathsDiff: { // K/D Diff (+/-)
                 both: playerRow.find(".mod-kd-diff .mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-kd-diff .mod-t").text().trim() || "0",
                 defend: playerRow.find(".mod-kd-diff .mod-ct").text().trim() || "0",
             },
-            kast: { // KAST
-                both: playerRow.find(".mod-stat").eq(4).find(".mod-both").text().trim() || "0%",
-                attack: playerRow.find(".mod-stat").eq(4).find(".mod-t").text().trim() || "0%",
-                defend: playerRow.find(".mod-stat").eq(4).find(".mod-ct").text().trim() || "0%",
-            },
-            adr: { // ADR
-                both: playerRow.find(".mod-stat").eq(5).find(".mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(5).find(".mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(5).find(".mod-side.mod-ct").text().trim() || "0",
-            },
-            hsPercent: { // HS%
+            Kast: { // KAST
                 both: playerRow.find(".mod-stat").eq(6).find(".mod-both").text().trim() || "0%",
                 attack: playerRow.find(".mod-stat").eq(6).find(".mod-t").text().trim() || "0%",
                 defend: playerRow.find(".mod-stat").eq(6).find(".mod-ct").text().trim() || "0%",
             },
-            firstKills: { // FK
+            Adr: { // ADR
                 both: playerRow.find(".mod-stat").eq(7).find(".mod-both").text().trim() || "0",
                 attack: playerRow.find(".mod-stat").eq(7).find(".mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(7).find(".mod-ct").text().trim() || "0",
+                defend: playerRow.find(".mod-stat").eq(7).find(".mod-side.mod-ct").text().trim() || "0",
             },
-            firstDeaths: { // FD
-                both: playerRow.find(".mod-stat").eq(8).find(".mod-both").text().trim() || "0",
-                attack: playerRow.find(".mod-stat").eq(8).find(".mod-t").text().trim() || "0",
-                defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0",
+            HsPercent: { // HS%
+                both: playerRow.find(".mod-stat").eq(8).find(".mod-both").text().trim() || "0%",
+                attack: playerRow.find(".mod-stat").eq(8).find(".mod-t").text().trim() || "0%",
+                defend: playerRow.find(".mod-stat").eq(8).find(".mod-ct").text().trim() || "0%",
+            },
+            FirstKills: { // FK
+                both: playerRow.find(".mod-stat").eq(9).find(".mod-both").text().trim() || "0%",
+                attack: playerRow.find(".mod-stat").eq(9).find(".mod-t").text().trim() || "0%",
+                defend: playerRow.find(".mod-stat").eq(9).find(".mod-ct").text().trim() || "0%",
+            },
+            FirstDeaths: { // FD
+                both: playerRow.find(".mod-stat").eq(10).find(".mod-both").text().trim() || "0%",
+                attack: playerRow.find(".mod-stat").eq(10).find(".mod-t").text().trim() || "0%",
+                defend: playerRow.find(".mod-stat").eq(10).find(".mod-ct").text().trim() || "0%",
             },
         };
 
@@ -196,118 +194,188 @@ const scrapeMatchDetails = async (matchId) => {
         }
         
         // ---- PROCESAMIENTO DE MAPAS INDIVIDUALES (de la página Overview principal) ----
-        $(".vm-stats-game").each((mapIndex, mapElement) => {
-            const mapContext = $(mapElement); // mapContext es un objeto Cheerio para el div.vm-stats-game actual
-            const gameId = mapContext.attr('data-game-id');
+        $(".vm-stats-game").each((mapIndexInDOM, mapElement) => { // Cambié mapIndex a mapIndexInDOM para claridad
+    const mapContext = $(mapElement);
+    const gameId = mapContext.attr('data-game-id');
 
-            if (!gameId || gameId === 'all') {
-                 console.log(`[scrapeMatchDetails] Saltando contenedor general (game-id: 'all' o sin gameId) en el bucle de mapas individuales.`);
-                return; // Saltar al siguiente .vm-stats-game
+    if (!gameId || gameId === 'all') {
+        console.log(`[scrapeMatchDetails] Saltando contenedor general (game-id: '${gameId || 'undefined'}') en el bucle de mapas individuales.`);
+        return; // Saltar el contenedor 'all' o cualquier otro sin gameId
+    }
+
+    const mapNameRaw = mapContext.find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
+    let currentMapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
+
+    const scoreTeam1Text = mapContext.find(".score").eq(0).text().trim();
+    const scoreTeam2Text = mapContext.find(".score").eq(1).text().trim();
+    const roundsPlayedCount = mapContext.find(".vlr-rounds .vlr-rounds-row-col").length;
+    let isPlayed = true;
+
+    if (!currentMapName) {
+        isPlayed = false;
+        currentMapName = `Mapa No Identificado (Índice DOM: ${mapIndexInDOM}, gameId: ${gameId})`;
+    } else if (scoreTeam1Text === '0' && scoreTeam2Text === '0' && roundsPlayedCount === 0 && !mapContext.find(".vlr-rounds").length) {
+        isPlayed = false;
+    }
+    
+    const duration = mapContext.find(".map-duration").text().trim();
+    // Es mejor obtener los nombres de los equipos del mapa directamente si están disponibles,
+    // o usar los generales como fallback.
+    const mapTeam1Name = mapContext.find(".team-name").eq(0).text().trim() || matchData.generalInfo.team1.name;
+    const mapTeam2Name = mapContext.find(".team-name").eq(1).text().trim() || matchData.generalInfo.team2.name;
+
+    const rounds = [];
+    if (isPlayed) {
+        mapContext.find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
+            const roundElement = $(roundEl);
+            const team1Sq = roundElement.find(".rnd-sq").eq(0);
+            const team2Sq = roundElement.find(".rnd-sq").eq(1);
+            const team1Win = team1Sq.hasClass("mod-win");
+            const team2Win = team2Sq.hasClass("mod-win");
+            const roundNumberText = roundElement.find(".rnd-num").text().trim();
+            const roundNumber = parseInt(roundNumberText, 10);
+
+            // Solo procesar si el número de ronda es válido
+            if (isNaN(roundNumber) || roundNumber <= 0) {
+                // console.warn(`[scrapeMatchDetails] Ronda con número inválido '${roundNumberText}' saltada para mapa ${currentMapName}`);
+                return; // Saltar esta iteración si no hay número de ronda válido
             }
 
-            const mapNameRaw = mapContext.find(".vm-stats-game-header .map div[style*='font-weight: 700']").text().trim();
-            let currentMapName = mapNameRaw.replace(/\s+PICK$/, "").trim();
-
-            const scoreTeam1Text = mapContext.find(".score").eq(0).text().trim();
-            const scoreTeam2Text = mapContext.find(".score").eq(1).text().trim();
-            const roundsPlayedCount = mapContext.find(".vlr-rounds .vlr-rounds-row-col").length;
-            let isPlayed = true;
-
-            if (!currentMapName) {
-                isPlayed = false;
-                currentMapName = `Mapa No Identificado ${mapIndex + 1} (gameId: ${gameId})`;
-            } else if (scoreTeam1Text === '0' && scoreTeam2Text === '0' && roundsPlayedCount === 0 && !mapContext.find(".vlr-rounds").length) {
-                // El chequeo de `!mapContext.find(".vlr-rounds").length` es para el caso de que el mapa sí se haya jugado pero terminó 0-0 en rondas (improbable)
-                // Si no existe la sección vlr-rounds, es un buen indicador de que no se jugó.
-                isPlayed = false;
+            let winningTeamName = null;
+            let outcomeDetail = null;
+            let winMethodIcon = null;
+            if (team1Win) {
+                winningTeamName = mapTeam1Name; // Usar mapTeam1Name
+                winMethodIcon = team1Sq.find("img").attr("src");
+                if (team1Sq.hasClass("mod-ct")) outcomeDetail = "ct-win";
+                else if (team1Sq.hasClass("mod-t")) outcomeDetail = "t-win";
+            } else if (team2Win) {
+                winningTeamName = mapTeam2Name; // Usar mapTeam2Name
+                winMethodIcon = team2Sq.find("img").attr("src");
+                if (team2Sq.hasClass("mod-ct")) outcomeDetail = "ct-win";
+                else if (team2Sq.hasClass("mod-t")) outcomeDetail = "t-win";
             }
-            
-            const duration = mapContext.find(".map-duration").text().trim();
-            const mapTeam1Name = mapContext.find(".team-name").eq(0).text().trim() || matchData.generalInfo.team1.name;
-            const mapTeam2Name = mapContext.find(".team-name").eq(1).text().trim() || matchData.generalInfo.team2.name;
-
-            const rounds = [];
-            if (isPlayed) {
-                mapContext.find(".vlr-rounds .vlr-rounds-row-col").each((j, roundEl) => {
-                    const roundElement = $(roundEl);
-                    // ... (tu lógica para extraer rondas, parece estar bien)
-                    // Asegúrate que `winningTeam` use `mapTeam1Name` y `mapTeam2Name` si los nombres de equipo en el mapa pueden ser diferentes
-                    // a los generales (ej. abreviaturas)
-                    const team1Sq = roundElement.find(".rnd-sq").eq(0);
-                    const team2Sq = roundElement.find(".rnd-sq").eq(1);
-                    const team1Win = team1Sq.hasClass("mod-win");
-                    const team2Win = team2Sq.hasClass("mod-win");
-                    const roundNumber = parseInt(roundElement.find(".rnd-num").text().trim(), 10) || j + 1;
-                    let winningTeamName = null;
-                    let outcomeDetail = null; // ct-win, t-win
-                    let winMethodIcon = null;
-                    if (team1Win) {
-                        winningTeamName = mapTeam1Name;
-                        winMethodIcon = team1Sq.find("img").attr("src");
-                        if (team1Sq.hasClass("mod-ct")) outcomeDetail = "ct-win";
-                        else if (team1Sq.hasClass("mod-t")) outcomeDetail = "t-win";
-                    } else if (team2Win) {
-                        winningTeamName = mapTeam2Name;
-                        winMethodIcon = team2Sq.find("img").attr("src");
-                        if (team2Sq.hasClass("mod-ct")) outcomeDetail = "ct-win";
-                        else if (team2Sq.hasClass("mod-t")) outcomeDetail = "t-win";
-                    }
-                    rounds.push({
-                        roundNumber,
-                        winningTeamName: winningTeamName,
-                        outcomeDetail: outcomeDetail,
-                        winMethodIcon: winMethodIcon || "no-time",
-                    });
-                });
-            }
-
-            let overviewStatsForThisMap = [];
-            if (isPlayed) { // Solo buscar stats si el mapa se jugó
-                const overviewTableForThisMap = mapContext.find('table.wf-table-inset.mod-overview').first();
-                console.log(`[Debug ${gameId}] Tipo de overviewTableForThisMap: ${typeof overviewTableForThisMap}`);
-                console.log(`[Debug ${gameId}] Es overviewTableForThisMap un objeto similar a Cheerio?: ${!!(overviewTableForThisMap && typeof overviewTableForThisMap.find === 'function' && typeof overviewTableForThisMap.length === 'number')}`);
-                console.log(`[Debug ${gameId}] Longitud de overviewTableForThisMap: ${overviewTableForThisMap ? overviewTableForThisMap.length : 'undefined o null'}`);
-            if (overviewTableForThisMap && overviewTableForThisMap.length > 0) {
-                console.log(`[Llamando a scrapeOverview para mapa ${gameId}] P1 (typeof $): ${typeof $}, P2 (typeof overviewTableForThisMap): ${typeof overviewTableForThisMap}, P2.length: <span class="math-inline">\{overviewTableForThisMap\.length\}, P3 \(statType\)\: overview\_map\_</span>{gameId}`);
-                overviewStatsForThisMap = scrapeOverview($, overviewTableForThisMap, `overview_map_${gameId}`);
-            } else {
-                     console.log(`[scrapeMatchDetails] No se encontró tabla de overview para el mapa ${currentMapName} (gameId: ${gameId})`);
-                }
-            }
-            
-            matchData.maps.push({
-                mapName: currentMapName,
-                gameId: gameId,
-                duration: duration,
-                teams: [
-                    { name: mapTeam1Name, score: parseInt(scoreTeam1Text, 10) || 0 },
-                    { name: mapTeam2Name, score: parseInt(scoreTeam2Text, 10) || 0 }
-                ],
-                played: isPlayed,
-                statsPerMap: {
-                    overview: overviewStatsForThisMap,
-                    performance: {}, // Se llenará después
-                    economy: {}    // Se llenará después
-                },
-                rounds: rounds
+            rounds.push({
+                roundNumber,
+                winningTeamName: winningTeamName, // Puede ser null si la ronda no tiene ganador claro (raro para rondas jugadas)
+                outcomeDetail: outcomeDetail,
+                winMethodIcon: winMethodIcon || "no-icon-found", // Un valor por defecto más claro
             });
         });
+        // Ordenar rondas después de extraerlas todas para este mapa
+        rounds.sort((a, b) => a.roundNumber - b.roundNumber);
+    }
+
+    let overviewStatsForThisMap = [];
+    if (isPlayed) {
+        const overviewTablesForThisMap = mapContext.find('table.wf-table-inset.mod-overview'); // Encuentra AMBAS tablas
         
-         console.log("[scrapeMatchDetails] Contenido de matchData.maps después de procesar Overview.html:", JSON.stringify(matchData.maps, null, 2)); // Log detallado
+        if (overviewTablesForThisMap.length > 0) {
+            console.log(`[scrapeMatchDetails] Encontradas ${overviewTablesForThisMap.length} tablas de overview para el mapa ${currentMapName} (gameId: ${gameId})`);
+            overviewTablesForThisMap.each((idx, tableEl) => {
+                const singleTableCheerio = $(tableEl);
+                const playersFromSingleTable = scrapeOverview($, singleTableCheerio, `overview_map_${gameId}_table_${idx + 1}`);
+                overviewStatsForThisMap = overviewStatsForThisMap.concat(playersFromSingleTable);
+            });
+            console.log(`[scrapeMatchDetails] Total de jugadores de overview para mapa ${currentMapName} (gameId: ${gameId}): ${overviewStatsForThisMap.length}`);
+        } else {
+            console.log(`[scrapeMatchDetails] No se encontró(aron) tabla(s) de overview para el mapa ${currentMapName} (gameId: ${gameId})`);
+        }
+    }
+    
+    // Crear el objeto del mapa
+    const mapObject = {
+        mapName: currentMapName,
+        gameId: gameId,
+        duration: duration,
+        teams: [
+            { name: mapTeam1Name, score: parseInt(scoreTeam1Text, 10) || 0 },
+            { name: mapTeam2Name, score: parseInt(scoreTeam2Text, 10) || 0 }
+        ],
+        played: isPlayed,
+        statsPerMap: {
+            overview: overviewStatsForThisMap,
+            performance: {}, // Se llenará después
+            economy: {}    // Se llenará después
+        },
+        rounds: rounds
+    };
+    matchData.maps.push(mapObject);
+});
+        //console.log("[scrapeMatchDetails] Contenido de matchData.maps después de procesar Overview.html:", JSON.stringify(matchData.maps, null, 2)); // Log detallado
+        
+        const mapNavOrderInfo = [];
+        $('div.vm-stats-gamesnav-item.js-map-switch').not('.mod-all').not('.mod-disabled').each((idx, navEl) => {
+            const navItem = $(navEl);
+            const gameId = navItem.attr('data-game-id');
+            const mapNumberText = navItem.find('div[style*="margin-bottom: 2px"] > span[style*="font-weight: 400"]').first().text().trim();
+            if (gameId && mapNumberText) {
+                mapNavOrderInfo.push({
+                    gameId: gameId,
+                    order: parseInt(mapNumberText, 10)
+                });
+            }
+        });
 
+        if (mapNavOrderInfo.length > 0) {
+        matchData.maps.sort((a, b) => {
+            const orderA = mapNavOrderInfo.find(info => info.gameId === a.gameId)?.order || 99;
+            const orderB = mapNavOrderInfo.find(info => info.gameId === b.gameId)?.order || 99;
+            return orderA - orderB;
+        });
+        console.log("[scrapeMatchDetails] Mapas ordenados según la navegación.");
+    }
         // ======== LLAMADAS A PARSEO DE PERFORMANCE Y ECONOMY (A implementar/revisar después) ========
-       if (performancePageHtml && typeof parsePerformancePage === 'function') {
-            console.log("[scrapeMatchDetails] Procesando datos de Performance...");
-            parsePerformancePage(performancePageHtml, matchData); // Asumiendo que parsePerformancePage modifica matchData directamente
-        } else if (!performancePageHtml) {
-            console.log("[scrapeMatchDetails] No hay datos de la página de Performance para procesar (performancePageHtml es null).");
-        }
+      let $performancePage = null; // Instancia de Cheerio para la página de performance
+if (performanceFullUrl) {
+    try {
+        console.log(`[scrapeMatchDetails] Obteniendo HTML de Performance desde: ${performanceFullUrl}`);
+        const perfHtmlContent = await rp(performanceFullUrl);
+        $performancePage = cheerio.load(perfHtmlContent);
+        console.log(`[scrapeMatchDetails] HTML de Performance obtenido y cargado.`);
+    } catch (err) {
+        console.error(`[scrapeMatchDetails] Error al obtener la página de Performance: ${err.message}`);
+    }
+}
 
-        if (economyPageHtml && typeof parseEconomyPage === 'function') { // economyPageHtml es Cheerio object
-            parseEconomyPage(economyPageHtml, matchData); // Pasamos matchData completo
-        }
+let $economyPage = null; // Instancia de Cheerio para la página de economy
+if (economyFullUrl) {
+    try {
+        console.log(`[scrapeMatchDetails] Obteniendo HTML de Economy desde: ${economyFullUrl}`);
+        const econHtmlContent = await rp(economyFullUrl);
+        $economyPage = cheerio.load(econHtmlContent);
+        console.log(`[scrapeMatchDetails] HTML de Economy obtenido y cargado.`);
+    } catch (err) {
+        console.error(`[scrapeMatchDetails] Error al obtener la página de Economy: ${err.message}`);
+    }
+}
 
-        return matchData;
+    // Ahora usa $performancePage y $economyPage
+    if ($performancePage && typeof parsePerformancePage === 'function') {
+        console.log("[scrapeMatchDetails] Procesando datos de Performance...");
+        const performanceOverallData = parsePerformancePage($performancePage, matchData.maps, matchData.generalInfo.team1.name, matchData.generalInfo.team2.name); // Asegúrate que parsePerformancePage puede usar los nombres de equipo si los necesita para el contexto global
+        if (performanceOverallData && performanceOverallData.overall) {
+            matchData.statsAllMaps.performance = performanceOverallData.overall;
+        }
+        // parsePerformancePage debería modificar matchData.maps[i].statsPerMap.performance directamente
+    } else {
+        console.log("[scrapeMatchDetails] No hay datos de la página de Performance para procesar ($performancePage es null o la función no existe).");
+        matchData.statsAllMaps.performance = { message: "Performance data not loaded or parser not available." }; // Placeholder
+    }
+
+    if ($economyPage && typeof parseEconomyPage === 'function') {
+        console.log("[scrapeMatchDetails] Procesando datos de Economy...");
+        const economyOverallData = parseEconomyPage($economyPage, matchData.maps, matchData.generalInfo.team1.name, matchData.generalInfo.team2.name);
+        if (economyOverallData && economyOverallData.overall) {
+            matchData.statsAllMaps.economy = economyOverallData.overall;
+        }
+        // parseEconomyPage debería modificar matchData.maps[i].statsPerMap.economy o matchData.maps[i].rounds
+    } else {
+        console.log("[scrapeMatchDetails] No hay datos de la página de Economy para procesar ($economyPage es null o la función no existe).");
+        matchData.statsAllMaps.economy = { message: "Economy data not loaded or parser not available." }; // Placeholder
+    }
+
+    return matchData;
 
     } catch(error) {
         console.error("Error al extraer datos del partido:", error.message); 
@@ -408,10 +476,10 @@ function parseSingleAdvStatsTable(advStatsTableCheerio, pageCheerioInstance) {
     return advancedPlayerStatsList;
 }
 // --- FIN: Función auxiliar ---
-function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es matchData.maps
+function parsePerformancePage($performancePageInstance, mapsArray, team1NameGlobal, team2NameGlobal) { // mapsArray es matchData.maps
     console.log("Parseando página de Performance...");
     
-    const overallPerformanceResult = { // Para las estadísticas generales del partido
+    const overallPerformanceResult = {
         general_duel_matrix: [],
         first_kill_duel_matrix: [],
         operator_duel_matrix: [],
@@ -419,23 +487,23 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
     };
 
     // 1. PROCESAR SECCIÓN DE ESTADÍSTICAS GENERALES (data-game-id="all")
-    const overallStatsContainer = performancePageHtml('div.vm-stats-game[data-game-id="all"]');
+    const overallStatsContainer = $performancePageInstance('div.vm-stats-game[data-game-id="all"]');
     if (overallStatsContainer.length > 0) {
         console.log("Procesando estadísticas generales de Performance (game=all)...");
         const overallDuelMatrixTables = overallStatsContainer.find('table.wf-table-inset.mod-matrix');
         if (overallDuelMatrixTables.length >= 1) {
-            overallPerformanceResult.general_duel_matrix = parseSingleDuelMatrixTable(overallDuelMatrixTables.eq(0), performancePageHtml);
+            overallPerformanceResult.general_duel_matrix = parseSingleDuelMatrixTable(overallDuelMatrixTables.eq(0), $performancePageInstance);
         }
         if (overallDuelMatrixTables.length >= 2) {
-            overallPerformanceResult.first_kill_duel_matrix = parseSingleDuelMatrixTable(overallDuelMatrixTables.eq(1), performancePageHtml);
+            overallPerformanceResult.first_kill_duel_matrix = parseSingleDuelMatrixTable(overallDuelMatrixTables.eq(1), $performancePageInstance);
         }
         if (overallDuelMatrixTables.length >= 3) {
-            overallPerformanceResult.operator_duel_matrix = parseSingleDuelMatrixTable(overallDuelMatrixTables.eq(2), performancePageHtml);
+            overallPerformanceResult.operator_duel_matrix = parseSingleDuelMatrixTable(overallDuelMatrixTables.eq(2), $performancePageInstance);
         }
 
         const overallAdvStatsTable = overallStatsContainer.find('table.wf-table-inset.mod-adv-stats');
         if (overallAdvStatsTable.length > 0) {
-            overallPerformanceResult.advanced_player_stats = parseSingleAdvStatsTable(overallAdvStatsTable, performancePageHtml);
+            overallPerformanceResult.advanced_player_stats = parseSingleAdvStatsTable(overallAdvStatsTable, $performancePageInstance);
         }
     } else {
         console.log("Contenedor de estadísticas generales (vm-stats-game[data-game-id='all']) no encontrado en la página de Performance.");
@@ -443,57 +511,105 @@ function parsePerformancePage(performancePageHtml, mapsArray) { // mapsArray es 
 
     // 2. PROCESAR SECCIONES DE ESTADÍSTICAS POR MAPA (data-game-id != 'all')
     console.log("Buscando secciones de estadísticas por mapa en la página de Performance...");
-    console.log(`[parsePerformancePage] Longitud de mapsArray: ${mapsArray.length}`);
+    console.log(`[parsePerformancePage] Longitud de mapsArray (matchData.maps): ${mapsArray.length}`);
 
-    performancePageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
-        const mapContainer = performancePageHtml(mapElement);
-        const gameId = mapContainer.attr('data-game-id');
+    $performancePageInstance("div.vm-stats-game[data-game-id][data-game-id!='all']").each((indexInPerformanceDOM, mapElement) => {
+        const mapContainerPerformance = $performancePageInstance(mapElement); // Contexto para este mapa en la página de Performance
+        const gameId = mapContainerPerformance.attr('data-game-id');
+        
+        // Encontrar el mapa correspondiente en mapsArray (que es matchData.maps, ya ordenado)
         const targetMap = mapsArray.find(map => map.gameId === gameId);
-        console.log(`[parsePerformancePage] Índice actual del mapa: ${index}, gameId: ${gameId}`);
+        
+        console.log(`[parsePerformancePage] Procesando gameId ${gameId} de la página de Performance (índice en DOM de Performance: ${indexInPerformanceDOM}).`);
 
         if (targetMap) {
-            if (!targetMap.played && targetMap.mapName && targetMap.mapName.includes("No Jugado")) {
-                console.log(`[parsePerformancePage] Saltando mapa no jugado: ${targetMap.mapName}`);
-                return;
+            if (!targetMap.played) { // Usar targetMap.played que se determinó en scrapeMatchDetails
+                console.log(`[parsePerformancePage] Saltando mapa no jugado (según Overview): ${targetMap.mapName} (gameId: ${gameId})`);
+                return; // Saltar al siguiente mapa en la página de Performance
             }
-            const currentMapName = targetMap.mapName;
-            console.log(`Procesando estadísticas de Performance para el mapa: ${currentMapName} (game-id: ${gameId}, índice en array: ${matchData.maps.indexOf(targetMap)})`);
-    
-            // Preparamos el objeto para los datos de performance de este mapa
-            targetMap.performance_data = {
-                general_duel_matrix: [],
-                first_kill_duel_matrix: [],
-                operator_duel_matrix: [],
-                advanced_player_stats: []
-            };
 
-            // Matrices de Duelos para ESTE MAPA (dentro de mapContainer)
-            const mapDuelMatrixTables = mapContainer.find('table.wf-table-inset.mod-matrix');
+            const currentMapName = targetMap.mapName; // Nombre del mapa de matchData.maps
+            const mapIndexInMatchData = mapsArray.indexOf(targetMap); // Índice correcto en tu array principal de mapas
+
+            console.log(`Procesando estadísticas de Performance para el mapa: ${currentMapName} (game-id: ${gameId}, índice en mapsArray: ${mapIndexInMatchData})`);
+    
+            // Asegúrate que targetMap.statsPerMap.performance exista si vas a asignar propiedades
+            if (!targetMap.statsPerMap) { targetMap.statsPerMap = {}; } // Inicializar si es necesario
+            if (!targetMap.statsPerMap.performance) { targetMap.statsPerMap.performance = {}; } // Inicializar para performance
+
+            // Modificar directamente targetMap.statsPerMap.performance (que es una referencia al objeto en matchData.maps)
+            targetMap.statsPerMap.performance.general_duel_matrix = [];
+            targetMap.statsPerMap.performance.first_kill_duel_matrix = [];
+            targetMap.statsPerMap.performance.operator_duel_matrix = [];
+            targetMap.statsPerMap.performance.advanced_player_stats = [];
+
+            // Matrices de Duelos para ESTE MAPA (dentro de mapContainerPerformance)
+            const mapDuelMatrixTables = mapContainerPerformance.find('table.wf-table-inset.mod-matrix');
             if (mapDuelMatrixTables.length >= 1) {
-                targetMap.performance_data.general_duel_matrix = parseSingleDuelMatrixTable(mapDuelMatrixTables.eq(0), performancePageHtml);
+                targetMap.statsPerMap.performance.general_duel_matrix = parseSingleDuelMatrixTable(mapDuelMatrixTables.eq(0), $performancePageInstance);
             }
             if (mapDuelMatrixTables.length >= 2) {
-                targetMap.performance_data.first_kill_duel_matrix = parseSingleDuelMatrixTable(mapDuelMatrixTables.eq(1), performancePageHtml);
+                targetMap.statsPerMap.performance.first_kill_duel_matrix = parseSingleDuelMatrixTable(mapDuelMatrixTables.eq(1), $performancePageInstance);
             }
             if (mapDuelMatrixTables.length >= 3) {
-                targetMap.performance_data.operator_duel_matrix = parseSingleDuelMatrixTable(mapDuelMatrixTables.eq(2), performancePageHtml);
+                targetMap.statsPerMap.performance.operator_duel_matrix = parseSingleDuelMatrixTable(mapDuelMatrixTables.eq(2), $performancePageInstance);
             }
 
-            // Tabla de Estadísticas Avanzadas para ESTE MAPA (dentro de mapContainer)
-            const mapAdvStatsTable = mapContainer.find('table.wf-table-inset.mod-adv-stats');
+            // Tabla de Estadísticas Avanzadas para ESTE MAPA (dentro de mapContainerPerformance)
+            const mapAdvStatsTable = mapContainerPerformance.find('table.wf-table-inset.mod-adv-stats');
             if (mapAdvStatsTable.length > 0) {
-                targetMap.performance_data.advanced_player_stats = parseSingleAdvStatsTable(mapAdvStatsTable, performancePageHtml);
+                targetMap.statsPerMap.performance.advanced_player_stats = parseSingleAdvStatsTable(mapAdvStatsTable, $performancePageInstance);
             }
             console.log(`Datos de Performance procesados y añadidos para el mapa: ${currentMapName}`);
 
         } else {
-            console.warn(`[parsePerformancePage] No se encontró mapa correspondiente en mapsArray para gameId: ${gameId}`);
+            console.warn(`[parsePerformancePage] No se encontró mapa correspondiente en mapsArray (matchData.maps) para gameId: ${gameId} (nombre del mapa en perf. page si disponible: ${mapContainerPerformance.find('.vm-stats-game-header .map div').first().text().trim()}).`);
         }
     });
 
-    return { overall: overallPerformanceResult };
+    return { overall: overallPerformanceResult }; // Devuelve solo los datos generales de "all maps"
 }
 
+function fuzzyMatchTeamName(canonicalNameLower, tagFromTableLower) {
+    if (!canonicalNameLower || !tagFromTableLower) return false;
+
+    // 1. Coincidencia exacta (por si acaso el tag es el nombre completo o viceversa)
+    if (canonicalNameLower === tagFromTableLower) return true;
+
+    // 2. El nombre canónico CONTIENE el tag de la tabla
+    //    Ej: canonical="team heretics", tag="heretics" -> true
+    //    Ej: canonical="bbl esports", tag="bbl" -> true
+    if (canonicalNameLower.includes(tagFromTableLower)) return true;
+
+    // 3. El nombre canónico EMPIEZA con el tag de la tabla (útil para tags cortos como "th")
+    //    Ej: canonical="team heretics", tag="t" -> true (si es solo una letra, puede ser ambiguo)
+    //    Ej: canonical="team heretics", tag="th" -> true
+    //    Asegurarse que el tag no sea demasiado largo para ser un prefijo simple.
+    if (tagFromTableLower.length <= 4 && canonicalNameLower.startsWith(tagFromTableLower)) return true;
+    
+    // 4. Comparar las primeras N palabras o caracteres si el tag es una abreviatura.
+    //    Ej: canonical="Team Liquid", tag="tl"
+    const canonicalWords = canonicalNameLower.split(/\s+/);
+    const tagChars = tagFromTableLower.split('');
+
+    if (tagChars.length === canonicalWords.length && tagChars.length > 1) { // ej: "tl" y "Team Liquid" (2 chars, 2 words)
+        let initialsMatch = true;
+        for (let i = 0; i < tagChars.length; i++) {
+            if (!canonicalWords[i].startsWith(tagChars[i])) {
+                initialsMatch = false;
+                break;
+            }
+        }
+        if (initialsMatch) return true;
+    }
+    
+    // 5. (Opcional) Casos muy específicos o un pequeño diccionario de mapeo si es necesario
+    // if (tagFromTableLower === "th" && canonicalNameLower.includes("heretics")) return true;
+    // if (tagFromTableLower === "fpx" && canonicalNameLower.includes("funplus phoenix")) return true;
+    // Esto podría crecer y volverse difícil de mantener.
+
+    return false;
+    }
 // --- INICIO: Funciones Auxiliares para Parseo de Economía ---
 
 function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
@@ -514,7 +630,7 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
             if (match) {
                 return {
                     total: parseInt(match[1], 10),
-                    detail: match[2] ? parseInt(match[2], 10) : null // El valor entre paréntesis
+                    won: match[2] ? parseInt(match[2], 10) : null // El valor entre paréntesis
                 };
             }
             return { total: 0, detail: null };
@@ -522,10 +638,10 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
         
         // Columnas según tu descripción: Pistol, Eco, $, $$, $$$
         teamData.pistol_won = parseStatVal(cells.eq(1));      // Pistol Won
-        teamData.eco_rounds_won = parseStatVal(cells.eq(2));  // Eco (won)
-        teamData.light_buy_won = parseStatVal(cells.eq(3));   // $ (won)
-        teamData.half_buy_won = parseStatVal(cells.eq(4));    // $$ (won)
-        teamData.full_buy_won = parseStatVal(cells.eq(5));    // $$$ (won)
+        teamData.eco_rounds_played = parseStatVal(cells.eq(2));  // Eco (won)
+        teamData.light_buy_played = parseStatVal(cells.eq(3));   // $ (won)
+        teamData.half_buy_played = parseStatVal(cells.eq(4));    // $$ (won)
+        teamData.full_buy_played = parseStatVal(cells.eq(5));    // $$$ (won)
         
         summary.push(teamData);
     });
@@ -533,151 +649,126 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
 }
 
 function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, equipo1NombreCanonico, equipo2NombreCanonico, nombreDelMapaActual) {
-    if (typeof equipo1NombreCanonico !== 'string' || typeof equipo2NombreCanonico !== 'string') {
-        console.error("[parseEcoRoundDetailsTable] Error: Nombres de equipo canónicos no son strings o no proporcionados.");
-        console.error(`equipo1NombreCanonico: ${equipo1NombreCanonico} (tipo: ${typeof equipo1NombreCanonico}), equipo2NombreCanonico: ${equipo2NombreCanonico} (tipo: ${typeof equipo2NombreCanonico})`);
-        return;
+    console.log(`[parseEcoRoundDetailsTable] Iniciando para mapa: ${nombreDelMapaActual}, Equipo1 Canónico: ${equipo1NombreCanonico}, Equipo2 Canónico: ${equipo2NombreCanonico}`);
+
+    // Obtener los nombres de los equipos TAL COMO APARECEN EN LAS FILAS DE LA TABLA DE ECONOMÍA
+    // Asumimos que la estructura con múltiples div.team en la primera celda es consistente
+    // para las filas que agrupan los datos de las rondas.
+    let teamNameInTable1 = null;
+    let teamNameInTable2 = null;
+
+    // Buscar la primera celda (td) de una fila (tr) que contenga los identificadores de equipo
+    const firstTeamLabelCell = tableCheerio.find('tr td:first-child:has(div.team)').first();
+
+    if (firstTeamLabelCell.length) {
+        const teamDivs = firstTeamLabelCell.find('div.team');
+        if (teamDivs.length >= 2) {
+            teamNameInTable1 = pageCheerioInstance(teamDivs.eq(0)).text().replace(/\s+/g, ' ').trim().toLowerCase(); // Nombre del equipo que aparece ARRIBA en las celdas de ronda
+            teamNameInTable2 = pageCheerioInstance(teamDivs.eq(1)).text().replace(/\s+/g, ' ').trim().toLowerCase(); // Nombre del equipo que aparece ABAJO
+            console.log(`[parseEcoRoundDetailsTable] Nombres de equipo en tabla eco: '${teamNameInTable1}' (arriba) y '${teamNameInTable2}' (abajo)`);
+        }
     }
 
-    const currentMapTeam1Name = equipo1NombreCanonico;
-    const currentMapTeam2Name = equipo2NombreCanonico;
-
-    const cleanTeam1Key = currentMapTeam1Name.replace(/\s+/g, '').toLowerCase();
-    const cleanTeam2Key = currentMapTeam2Name.replace(/\s+/g, '').toLowerCase();
-
-    const dataRows = tableCheerio.find('tr').filter((i, rowEl) => {
-        return pageCheerioInstance(rowEl).find('td:first-child div.team').length > 0;
-    });
-
-    if (dataRows.length < 2) {
-        console.error(`[parseEcoRoundDetailsTable] No se encontraron suficientes filas de datos de equipo (esperaba 2, encontré ${dataRows.length}).`);
-        console.log("HTML de la tabla de economía que se está parseando:", tableCheerio.html()); // Descomenta para depurar
+    if (!teamNameInTable1 || !teamNameInTable2) {
+        console.error(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}: No se pudieron extraer los nombres de los equipos de las filas de la tabla de economía. No se pueden procesar los bancos.`);
         return;
     }
+    
+    // Iterar sobre todas las filas <tr> de la tabla
+    tableCheerio.find('tr').each((rowIndex, rowElement) => {
+        const row = pageCheerioInstance(rowElement);
+        // Iterar sobre las celdas <td> de datos de ronda en esta fila
+        // Excluimos la primera celda si es la que tiene los nombres de los equipos
+        row.find('td').slice(rowIndex === 0 ? 1 : 0).each((cellIndex, cellElement) => { // Si es la primera fila (cabecera), slice(1). Sino, desde la primera celda de datos.
+                                                                                        // ESTO NECESITA AJUSTE: la cabecera es <th>, las filas de datos son <tr><td>...</td></tr>
+            const roundCell = pageCheerioInstance(cellElement);
+            const roundNumText = roundCell.find('.round-num').first().text().trim();
+            const roundNum = parseInt(roundNumText, 10);
 
-    const team1Row = pageCheerioInstance(dataRows.eq(0));
-    const team2Row = pageCheerioInstance(dataRows.eq(1));
-
-    const roundNumberHeaders = [];
-    tableCheerio.find('tr').first().find('th, td').slice(1).each((idx, cellEl) => {
-        const roundNumText = pageCheerioInstance(cellEl).text().trim();
-        const roundNum = parseInt(roundNumText, 10);
-        if (!isNaN(roundNum)) {
-            roundNumberHeaders.push(roundNum);
-        }
-    });
-
-    if (roundNumberHeaders.length === 0) {
-        console.error("[parseEcoRoundDetailsTable] No se pudieron extraer los números de ronda de la cabecera de la tabla de economía.");
-        return;
-    }
-
-    const parseBankValue = (bankText) => {
-        if (!bankText) return 0;
-        const text = bankText.toLowerCase().trim(); // Añadido trim() aquí también
-        let value;
-        if (text.includes('k')) {
-            value = parseFloat(text.replace('k', '')) * 1000;
-        } else {
-            // Quitar cualquier cosa que no sea dígito o punto decimal para el caso de "2,000" o "2.000"
-            // Pero vlr.gg usa "2k" o "2000", no comas.
-            const cleanedText = text.replace(/[^0-9.]/g, '');
-            value = parseFloat(cleanedText);
-        }
-        return isNaN(value) ? 0 : Math.round(value); // Redondear por si acaso (ej. 8.2k -> 8200)
-    };
-
-    roundNumberHeaders.forEach((roundNum, roundIndexInHeader) => {
-        const dataCellIndex = roundIndexInHeader + 1;
-
-        const team1RoundCellElement = team1Row.find('td').eq(dataCellIndex);
-        const team2RoundCellElement = team2Row.find('td').eq(dataCellIndex);
-
-        if (!team1RoundCellElement.length || !team2RoundCellElement.length) {
-            console.warn(`[parseEcoRoundDetailsTable] No se encontró celda de datos para la ronda ${roundNum} (índice de cabecera ${roundIndexInHeader}, dataCellIndex ${dataCellIndex})`);
-            return; 
-        }
-
-        const team1RoundCell = pageCheerioInstance(team1RoundCellElement);
-        const team2RoundCell = pageCheerioInstance(team2RoundCellElement);
-
-        const team1BankText = team1RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
-        const team2BankText = team2RoundCell.find('div.bank').text(); // .trim() se hace en parseBankValue
-        
-        console.log(`Ronda ${roundNum} del mapa ${nombreDelMapaActual}:`); // Usar el parámetro
-
-        console.log(`  Team1 (arriba en tabla eco): Texto Banco="${team1BankText.trim()}", Parsed=${parseBankValue(team1BankText)}`);
-        console.log(`  Team2 (abajo en tabla eco): Texto Banco="${team2BankText.trim()}", Parsed=${parseBankValue(team2BankText)}`);
-
-        const team1Bank = parseBankValue(team1BankText);
-        const team2Bank = parseBankValue(team2BankText);
-        
-        // --- DEBUG LOG ---
-        console.log(`Ronda ${roundNum}: Team1 Bank Text: "${team1BankText}", Parsed: ${team1Bank} | Team2 Bank Text: "${team2BankText}", Parsed: ${team2Bank}`);
-        // --- FIN DEBUG LOG ---
-
-        const team1BuySq = team1RoundCell.find('div.rnd-sq');
-        const team2BuySq = team2RoundCell.find('div.rnd-sq');
-
-        let winningTeamNameCanonical = null;
-        let resultForJSON = null;
-        let methodIcon = team1BuySq.find('img').attr('src') || team2BuySq.find('img').attr('src') || '';
-
-
-        if (team1BuySq.hasClass('mod-win')) {
-            winningTeamNameCanonical = currentMapTeam1Name;
-            methodIcon = team1BuySq.find('img').attr('src') || methodIcon;
-            if (team1BuySq.hasClass('mod-ct')) resultForJSON = 'ct-win';
-            else if (team1BuySq.hasClass('mod-t')) resultForJSON = 't-win';
-        } else if (team2BuySq.hasClass('mod-win')) {
-            winningTeamNameCanonical = currentMapTeam2Name;
-            methodIcon = team2BuySq.find('img').attr('src') || methodIcon;
-            if (team2BuySq.hasClass('mod-ct')) resultForJSON = 'ct-win';
-            else if (team2BuySq.hasClass('mod-t')) resultForJSON = 't-win';
-        }
-
-        if (methodIcon && methodIcon.includes('/')) {
-            methodIcon = methodIcon.substring(methodIcon.lastIndexOf('/') + 1);
-        }
-
-        const targetRound = mapRoundsArrayToUpdate.find(r => r.roundNumber === roundNum);
-
-        if (targetRound) {
-            // ... (asignación de winner, result, method como antes) ...
-        
-            const nameFromTeam1RowHTML = team1Row.find('td:first-child div.team').text().replace(/\s+/g, ' ').trim().toLowerCase();
-            const nameFromTeam2RowHTML = team2Row.find('td:first-child div.team').text().replace(/\s+/g, ' ').trim().toLowerCase();
-        
-            const canonTeam1Lower = equipo1NombreCanonico.toLowerCase();
-            const canonTeam2Lower = equipo2NombreCanonico.toLowerCase();
-        
-            // Generar claves limpias para los nombres canónicos
-            const keyForCanonTeam1 = canonTeam1Lower.replace(/\s+/g, '') + 'Bank';
-            const keyForCanonTeam2 = canonTeam2Lower.replace(/\s+/g, '') + 'Bank';
-        
-            // Comprobar a quién pertenece team1Bank (extraído de team1Row)
-            if (nameFromTeam1RowHTML.includes(canonTeam1Lower.substring(0, Math.min(3, canonTeam1Lower.length))) || canonTeam1Lower.includes(nameFromTeam1RowHTML.substring(0, Math.min(3, nameFromTeam1RowHTML.length)))) {
-                targetRound[keyForCanonTeam1] = team1Bank;
-                targetRound[keyForCanonTeam2] = team2Bank; // Asumimos que team2Row es el otro equipo
-            } else if (nameFromTeam1RowHTML.includes(canonTeam2Lower.substring(0, Math.min(3, canonTeam2Lower.length))) || canonTeam2Lower.includes(nameFromTeam1RowHTML.substring(0, Math.min(3, nameFromTeam1RowHTML.length)))) {
-                targetRound[keyForCanonTeam2] = team1Bank; // team1Row era en realidad equipo2NombreCanonico
-                targetRound[keyForCanonTeam1] = team2Bank; // team2Row era en realidad equipo1NombreCanonico
-            } else {
-                console.warn(`[parseEcoRoundDetailsTable] Mapa ${currentMapName}, Ronda ${roundNum}: No se pudo hacer coincidir nombre de tabla eco "${nameFromTeam1RowHTML}" con nombres canónicos. Usando asignación por defecto.`);
-                // Asignación por defecto (podría ser incorrecta si el orden de la tabla no coincide con tu team1/team2 global)
-                targetRound[keyForCanonTeam1] = team1Bank;
-                targetRound[keyForCanonTeam2] = team2Bank;
+            if (isNaN(roundNum) || roundNum <= 0) {
+                // No es una celda de ronda válida o es la celda de etiquetas de equipo
+                return; // Saltar esta celda
             }
-            // --- DEBUG LOG para la asignación ---
-            // console.log(`Ronda ${roundNum} Mapa ${currentMapName} - Asignación de bancos: ${keyForCanonTeam1}=${targetRound[keyForCanonTeam1]}, ${keyForCanonTeam2}=${targetRound[keyForCanonTeam2]}`);
-        
-        } else {
-            console.warn(`[parseEcoRoundDetailsTable] Mapa ${currentMapName}: No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate. Datos económicos para esta ronda no se guardarán.`);
-        }
+
+            const banks = roundCell.find('.bank');
+            const buySquares = roundCell.find('.rnd-sq'); // Para determinar ganador y tipo de compra/resultado
+
+            if (banks.length < 2 || buySquares.length < 2) {
+                console.warn(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, Ronda ${roundNum}: Estructura de celda de ronda inesperada. Bancos: ${banks.length}, Cuadrados de Compra: ${buySquares.length}. Saltando.`);
+                return; // Saltar esta celda si no tiene la estructura esperada
+            }
+
+            const parseBankValue = (bankText) => {
+                if (!bankText) return 0;
+                const text = bankText.toLowerCase().trim(); // Añadido trim() aquí también
+                let value;
+                if (text.includes('k')) {
+                    value = parseFloat(text.replace('k', '')) * 1000;
+                } else {
+                    // Quitar cualquier cosa que no sea dígito o punto decimal para el caso de "2,000" o "2.000"
+                    // Pero vlr.gg usa "2k" o "2000", no comas.
+                    const cleanedText = text.replace(/[^0-9.]/g, '');
+                    value = parseFloat(cleanedText);
+                }
+                return isNaN(value) ? 0 : Math.round(value); // Redondear por si acaso (ej. 8.2k -> 8200)
+            };
+            const bankTeam1Text = pageCheerioInstance(banks.eq(0)).text(); // Banco del equipo de ARRIBA
+            const bankTeam2Text = pageCheerioInstance(banks.eq(1)).text(); // Banco del equipo de ABAJO
+
+            const bankTeam1 = parseBankValue(bankTeam1Text);
+            const bankTeam2 = parseBankValue(bankTeam2Text);
+            
+            console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, Ronda ${roundNum}: Banco Sup. (text: "${bankTeam1Text.trim()}", parsed: ${bankTeam1}), Banco Inf. (text: "${bankTeam2Text.trim()}", parsed: ${bankTeam2})`);
+
+            const targetRound = mapRoundsArrayToUpdate.find(r => r.roundNumber === roundNum);
+           if (targetRound) {
+    const keyTeam1Bank = `${equipo1NombreCanonico.replace(/\s+/g, '')}Bank`;
+    const keyTeam2Bank = `${equipo2NombreCanonico.replace(/\s+/g, '')}Bank`;
+
+    const cName1Lower = equipo1NombreCanonico.toLowerCase();
+    const cName2Lower = equipo2NombreCanonico.toLowerCase();
+
+    const tagArribaLower = teamNameInTable1; // Ya debería estar en minúsculas si lo hiciste al extraer
+    const tagAbajoLower = teamNameInTable2;   // Ya debería estar en minúsculas
+
+    let assigned = false;
+
+    // Log para depuración de las entradas de la comparación
+    console.log(`[parseEcoRoundDetailsTable] Ronda ${roundNum} - Intentando Coincidencia:`);
+    console.log(`  Nombres Canónicos: E1='${cName1Lower}', E2='${cName2Lower}'`);
+    console.log(`  Tags de Tabla Eco: Arriba='${tagArribaLower}', Abajo='${tagAbajoLower}'`);
+
+    // Intento 1: Tag de Arriba es Equipo 1 Canónico, Tag de Abajo es Equipo 2 Canónico
+    if (fuzzyMatchTeamName(cName1Lower, tagArribaLower) && fuzzyMatchTeamName(cName2Lower, tagAbajoLower)) {
+        targetRound[keyTeam1Bank] = bankTeam1;
+        targetRound[keyTeam2Bank] = bankTeam2;
+        assigned = true;
+        console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Bancos asignados (A). ${equipo1NombreCanonico}(${tagArribaLower})=${bankTeam1}, ${equipo2NombreCanonico}(${tagAbajoLower})=${bankTeam2}`);
+    }
+    // Intento 2: Tag de Arriba es Equipo 2 Canónico, Tag de Abajo es Equipo 1 Canónico
+    else if (fuzzyMatchTeamName(cName2Lower, tagArribaLower) && fuzzyMatchTeamName(cName1Lower, tagAbajoLower)) {
+        targetRound[keyTeam2Bank] = bankTeam1;
+        targetRound[keyTeam1Bank] = bankTeam2;
+        assigned = true;
+        console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Bancos asignados (B - Invertido). ${equipo2NombreCanonico}(${tagArribaLower})=${bankTeam1}, ${equipo1NombreCanonico}(${tagAbajoLower})=${bankTeam2}`);
+    }
+
+    if (!assigned) {
+        console.warn(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, Ronda ${roundNum}: ADVERTENCIA CRÍTICA - No se pudo hacer coincidir par de tags de tabla eco ('${tagArribaLower}', '${tagAbajoLower}') con par de nombres canónicos ('${cName1Lower}', '${cName2Lower}'). Asignación RAW.`);
+        const rawBankKeyTop = `${tagArribaLower.replace(/\s+/g, '')}Bank_FromEcoTable`;
+        const rawBankKeyBottom = `${tagAbajoLower.replace(/\s+/g, '')}Bank_FromEcoTable`;
+        targetRound[rawBankKeyTop] = bankTeam1;
+        targetRound[rawBankKeyBottom] = bankTeam2;
+    }
+} else {
+    console.warn(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}: No se encontró la ronda ${roundNum} en mapRoundsArrayToUpdate (proveniente de Overview). Datos económicos para esta ronda no se integrarán.`);
+}
+        });
     });
+    console.log(`[parseEcoRoundDetailsTable] Finalizado para mapa: ${nombreDelMapaActual}`);
 }
 // --- FIN: Funciones Auxiliares ---
-function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
+function parseEconomyPage($pageInstance, mapsArray,team1Name, team2Name){
     console.log("Parseando página de Economy...");
     console.log(`[parseEconomyPage] Recibido team1NameGlobal: "${team1Name}", Tipo: ${typeof team1Name}`);
     console.log(`[parseEconomyPage] Recibido team2NameGlobal: "${team2Name}", Tipo: ${typeof team2Name}`);
@@ -689,21 +780,21 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
     };
 
     // 1. PROCESAR SECCIÓN DE ESTADÍSTICAS GENERALES (data-game-id="all")
-    const overallStatsContainer = economyPageHtml('div.vm-stats-game[data-game-id="all"]');
+    const overallStatsContainer = $pageInstance('div.vm-stats-game[data-game-id="all"]');
     if (overallStatsContainer.length > 0) {
         console.log("Procesando estadísticas generales de Economy (game=all)...");
         const econTables = overallStatsContainer.find('table.wf-table-inset.mod-econ');
         
         if (econTables.length >= 1) {
             console.log("Procesando tabla de resumen de economía general...");
-            overallEconomyResult.summary = parseEcoSummaryTable(econTables.eq(0), economyPageHtml);
+            overallEconomyResult.summary = parseEcoSummaryTable(econTables.eq(0), $pageInstance);
         }
         // En la sección de data-game-id="all"
         if (econTables.length >= 2) {
             console.log("Procesando tabla de detalles de economía por ronda general...");
             overallEconomyResult.round_details = parseEcoRoundDetailsTable(
                 econTables.eq(1),
-                economyPageHtml,
+                $pageInstance,
                 null, // mapRoundsArrayToUpdate
                 team1Name, // El parámetro equipo1NombreGlobal de parseEconomyPage
                 team2Name  // El parámetro equipo2NombreGlobal de parseEconomyPage
@@ -715,55 +806,56 @@ function parseEconomyPage(economyPageHtml, mapsArray,team1Name, team2Name){
 
     // 2. PROCESAR SECCIONES DE ESTADÍSTICAS POR MAPA (data-game-id != 'all')
     console.log("Buscando secciones de estadísticas de economía por mapa...");
-    economyPageHtml("div.vm-stats-game[data-game-id][data-game-id!='all']").each((index, mapElement) => {
-        const mapContainer = economyPageHtml(mapElement);
-        const gameId = mapContainer.attr('data-game-id');
-        const targetMap = mapsArray[index]; // Asumiendo que index < mapsArray.length
-        if (!targetMap.played && targetMap.currentMapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
-            console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.currentMapName}`);
-            return; // Saltar al siguiente mapa
-        }
-        const currentMapName = targetMap ? targetMap.currentMapName : "NombreDesconocido";
+    $pageInstance("div.vm-stats-game[data-game-id][data-game-id!='all']").each((indexInEconomyDOM, mapElement) => {
+    const mapContainerEconomy = $pageInstance(mapElement);
+    const gameId = mapContainerEconomy.attr('data-game-id');
+    console.log(`[parseEconomyPage] Procesando gameId '${gameId}' desde DOM de página de Economía.`);
+
+    const targetMap = mapsArray.find(map => map.gameId === gameId); // Encuentra el mapa por gameId
+
+    //console.log(`[parseEconomyPage] Procesando gameId ${gameId} de la página de Economy (índice en DOM de Economy: ${indexInEconomyDOM}).`);
+
+    if (!targetMap) {
+        console.warn(`[parseEconomyPage] No se encontró mapa correspondiente en mapsArray para gameId: ${gameId}. Saltando.`);
+        return; // Saltar esta iteración
+    }
+
+    console.log(`[parseEconomyPage] INFO: targetMap encontrado para gameId '${gameId}': ${targetMap.mapName}. Verificando si se jugó...`);
+
+    // Usa targetMap.mapName para el nombre y targetMap.played para la condición
+    const currentMapName = targetMap.mapName; // Nombre correcto del mapa
+    console.log(`[parseEconomyPage] INFO: Procesando economía para mapa jugado: ${currentMapName} (gameId '${gameId}')`);
+
+    if (!targetMap.played) { // Comprobar si el mapa se jugó (según datos de Overview)
+        console.log(`[parseEconomyPage] INFO: Mapa ${targetMap.mapName} (gameId '${gameId}') no se jugó (según Overview). Saltando procesamiento de economía.`);
+        return; // Saltar al siguiente mapa
+    }
+
+    //console.log(`Procesando estadísticas de Economy para el mapa: ${currentMapName} (game-id: ${gameId}, índice en mapsArray: ${mapIndexInMatchData})`);
     
-        console.log(`[parseEconomyPage] Procesando sección de mapa: ${currentMapName} (gameId: ${gameId})`); // Log ANTES de definir mapEconTables
-    
-        const mapEconTables = mapContainer.find('table.wf-table-inset.mod-econ'); // mapEconTables DEFINIDO AQUÍ
-        
-        if (!targetMap) {
-            console.warn(`[parseEconomyPage] No se encontró targetMap para el índice ${index}`);
-            return; // Saltar esta iteración
-        }
-        // Dentro del .each de los mapas en parseEconomyPage
-        console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa ${currentMapName}. team1Name: "${team1Name}", team2Name: "${team2Name}"`);
-        if (index < mapsArray.length) {
-            const targetMap = mapsArray[index]; 
-            if (!targetMap.played && targetMap.currentMapName.includes("No Jugado")) { // O simplemente if(!targetMap.name) si el nombre es la clave
-                console.log(`[parseEconomyPage/parsePerformancePage] Saltando mapa no jugado: ${targetMap.currentMapName}`);
-                return; // Saltar al siguiente mapa
-            }
-            const currentMapName = targetMap.currentMapName;  
+    // Asegúrate de que targetMap.statsPerMap.economy exista
+    if (!targetMap.statsPerMap) { targetMap.statsPerMap = {}; }
+    if (!targetMap.statsPerMap.economy) { targetMap.statsPerMap.economy = {}; }
 
-            console.log(`Procesando estadísticas de Economy para el mapa: ${currentMapName} (game-id: ${gameId}, índice: ${index})`);
+    targetMap.statsPerMap.economy.summary = [];
+    // Los detalles de las rondas (banco) se añaden directamente a targetMap.rounds
 
-            targetMap.economy_data = {
-                summary: [],
-                // round_details se añadirán directamente al array targetMap.rounds existente
-            };
+    const mapEconTables = mapContainerEconomy.find('table.wf-table-inset.mod-econ');
+    if (mapEconTables.length >= 1) {
+        targetMap.statsPerMap.economy.summary = parseEcoSummaryTable(mapEconTables.eq(0), $pageInstance);
+    }
 
-            const mapEconTables = mapContainer.find('table.wf-table-inset.mod-econ');
-            if (mapEconTables.length >= 1) {
-                targetMap.economy_data.summary = parseEcoSummaryTable(mapEconTables.eq(0), economyPageHtml);
-            }
-            if (mapEconTables.length >= 2) {
-                console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa <span class="math-inline">\{currentMapName\}\. team1NameGlobal\: "</span>{team1NameGlobal}", team2NameGlobal: "${team2Name}"`);
-                parseEcoRoundDetailsTable(mapEconTables.eq(1), economyPageHtml, targetMap.rounds, team1Name, team2Name);
-            } else {
-                console.log(`[parseEconomyPage] No se encontró la segunda tabla de economía para el mapa ${currentMapName}`);
-            }}
+    if (mapEconTables.length >= 2) {
+        //console.log(`[parseEconomyPage] Pasando a parseEcoRoundDetailsTable para mapa <span class="math-inline">\{currentMapName\}\. team1Name\: "</span>{targetMap.teams[0].name}", team2Name: "${targetMap.teams[1].name}"`);
+        // Pasar los nombres de equipo específicos del targetMap si es más preciso para el contexto del mapa
+        parseEcoRoundDetailsTable(mapEconTables.eq(1), $pageInstance, targetMap.rounds, targetMap.teams[0].name, targetMap.teams[1].name, currentMapName);
+    } else {
+        console.log(`[parseEconomyPage] No se encontró la segunda tabla de economía (detalles de ronda) para el mapa ${currentMapName}`);
+    }
     });
 
     return { overall: overallEconomyResult }; // Devuelve las estadísticas generales
-                                            // mapsArray (matchData.maps) se actualiza por referencia
+
 }
 // Función principal para extraer los detalles del partido
 
