@@ -4,12 +4,15 @@ const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
 function scrapeOverview($, tableCheerioObject, statType) { // statType es opcional, más para logging
     const overviewData = [];
-    if (!tableCheerioObject || tableCheerioObject.length === 0) {
-        console.warn(`[scrapeOverview] La tabla para '${statType}' está vacía o no fue proporcionada.`);
-        return overviewData; // Devuelve array vacío si no hay tabla
+    console.log(`[scrapeOverview - ${statType}] Iniciando. Tipo de tableCheerioObject: ${typeof tableCheerioObject}`);
+    if (!tableCheerioObject || typeof tableCheerioObject.find !== 'function') {
+        console.error(`[scrapeOverview - ${statType}] tableCheerioObject NO es un objeto Cheerio válido o no tiene .find().`);
+        // console.log(tableCheerioObject); // Loguea qué es exactamente si no es Cheerio
+        return overviewData; // Salir temprano si no es lo que esperamos
     }
+    console.log(`[scrapeOverview - ${statType}] tableCheerioObject.length: ${tableCheerioObject.length}`);
 
-    console.log(`[scrapeOverview] HTML de la tabla a parsear para ${statType}: ${tableCheerioObject.html().substring(0, 300)}...`);
+    //console.log(`[scrapeOverview] HTML de la tabla a parsear para ${statType}: ${tableCheerioObject.html().substring(0, 300)}...`);
 
 
     tableCheerioObject.find('tbody tr').each((i, rowElement) => {
@@ -184,7 +187,7 @@ const scrapeMatchDetails = async (matchId) => {
         } else {
             // Si no hay un div "data-game-id='all'", quizás la primera tabla es la general.
             // Esto es menos común para overview si hay varios mapas.
-            // const firstOverviewTable = $('table.wf-table-inset.mod-overview').first();
+            const firstOverviewTable = $('table.wf-table-inset.mod-overview').first();
         if (firstOverviewTable.length > 0) {
                  matchData.statsAllMaps.overview = scrapeOverview(firstOverviewTable, "overview_all_maps_fallback");
         } else {
@@ -260,10 +263,14 @@ const scrapeMatchDetails = async (matchId) => {
 
             let overviewStatsForThisMap = [];
             if (isPlayed) { // Solo buscar stats si el mapa se jugó
-                const overviewTableForThisMap = mapContext.find('table.wf-table-inset.mod-overview');
-                if (overviewTableForThisMap.length > 0) {
-                    overviewStatsForThisMap = scrapeOverview(overviewTableForThisMap, `overview_map_${gameId}`);
-                } else {
+                const overviewTableForThisMap = mapContext.find('table.wf-table-inset.mod-overview').first();
+                console.log(`[Debug ${gameId}] Tipo de overviewTableForThisMap: ${typeof overviewTableForThisMap}`);
+                console.log(`[Debug ${gameId}] Es overviewTableForThisMap un objeto similar a Cheerio?: ${!!(overviewTableForThisMap && typeof overviewTableForThisMap.find === 'function' && typeof overviewTableForThisMap.length === 'number')}`);
+                console.log(`[Debug ${gameId}] Longitud de overviewTableForThisMap: ${overviewTableForThisMap ? overviewTableForThisMap.length : 'undefined o null'}`);
+            if (overviewTableForThisMap && overviewTableForThisMap.length > 0) {
+                console.log(`[Llamando a scrapeOverview para mapa ${gameId}] P1 (typeof $): ${typeof $}, P2 (typeof overviewTableForThisMap): ${typeof overviewTableForThisMap}, P2.length: <span class="math-inline">\{overviewTableForThisMap\.length\}, P3 \(statType\)\: overview\_map\_</span>{gameId}`);
+                overviewStatsForThisMap = scrapeOverview($, overviewTableForThisMap, `overview_map_${gameId}`);
+            } else {
                      console.log(`[scrapeMatchDetails] No se encontró tabla de overview para el mapa ${currentMapName} (gameId: ${gameId})`);
                 }
             }
@@ -289,8 +296,11 @@ const scrapeMatchDetails = async (matchId) => {
          console.log("[scrapeMatchDetails] Contenido de matchData.maps después de procesar Overview.html:", JSON.stringify(matchData.maps, null, 2)); // Log detallado
 
         // ======== LLAMADAS A PARSEO DE PERFORMANCE Y ECONOMY (A implementar/revisar después) ========
-        if (performancePageHtml && typeof parsePerformancePage === 'function') { // performancePageHtml es Cheerio object
-            parsePerformancePage(performancePageHtml, matchData); // Pasamos matchData completo para que lo modifique
+       if (performancePageHtml && typeof parsePerformancePage === 'function') {
+            console.log("[scrapeMatchDetails] Procesando datos de Performance...");
+            parsePerformancePage(performancePageHtml, matchData); // Asumiendo que parsePerformancePage modifica matchData directamente
+        } else if (!performancePageHtml) {
+            console.log("[scrapeMatchDetails] No hay datos de la página de Performance para procesar (performancePageHtml es null).");
         }
 
         if (economyPageHtml && typeof parseEconomyPage === 'function') { // economyPageHtml es Cheerio object
