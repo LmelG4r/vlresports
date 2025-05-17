@@ -1,10 +1,22 @@
 {
+    "version": "0.2.0",
     "configurations": [
         {
-            "type": "chrome",
-            "name": "http://localhost:5000/api/v1/resultados/482507",
+            "type": "node",
             "request": "launch",
-            "url": "http://localhost:5000/api/v1/resultados/482507"
+            "name": "Depurar API VLR Esports (npm start)",
+            "runtimeExecutable": "npm", // Correcto, porque queremos que VS Code ejecute "npm start"
+            "runtimeArgs": [
+                "run-script", // Argumento para npm
+                "start"       // Nombre del script en package.json
+            ],
+            "port": 9229,
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
         }
     ]
 }
