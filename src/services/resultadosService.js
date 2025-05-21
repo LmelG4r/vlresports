@@ -115,6 +115,7 @@ const scrapeMatchDetails = async (matchId) => {
                 team1: { name: null, score: null },
                 team2: { name: null, score: null },
                 tournament: null,
+                stage: null, 
                 date: null, // <--- NUEVO CAMPO para la fecha 
                 matchFormat: null, // <--- NUEVO CAMPO para el formato (BoX)
                 picksAndBansRaw: null// <--- NUEVO CAMPO para picks y bans
@@ -154,6 +155,7 @@ const scrapeMatchDetails = async (matchId) => {
 
         // ---- EXTRACCIÓN DE INFO GENERAL ----
         matchData.generalInfo.tournament = $(".match-header-event > div > div").eq(0).text().trim() || "Torneo no especificado";
+        matchData.generalInfo.stage = $(".match-header-event-series").eq(0).text().trim() || "Torneo no especificado";
         const dateElement = $(".moment-tz-convert[data-utc-ts]").first(); // Tomar el primer elemento con data-utc-ts
         if (dateElement.length > 0) {
             const utcTimestampString = dateElement.attr('data-utc-ts'); // Ej: "2025-05-10 11:00:00"
@@ -194,7 +196,7 @@ const scrapeMatchDetails = async (matchId) => {
         const picksBansRawText = $(".match-header-note").text().trim();
         if (picksBansRawText) {
             matchData.generalInfo.picksAndBansRaw = picksBansRawText;
-            console.log(`[resultadosService] String de Picks/Bans: "${matchData.generalInfo.picksAndBansRaw}"`);
+            //console.log(`[resultadosService] String de Picks/Bans: "${matchData.generalInfo.picksAndBansRaw}"`);
         } else {
             matchData.generalInfo.picksAndBansRaw = "Picks/Bans no especificados";
             console.warn("[resultadosService] No se encontró el texto de picks y bans.");
@@ -697,7 +699,7 @@ function parseEcoSummaryTable(tableCheerio, pageCheerioInstance) {
 }
 
 function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsArrayToUpdate, equipo1NombreCanonico, equipo2NombreCanonico, nombreDelMapaActual) {
-    console.log(`[parseEcoRoundDetailsTable] Iniciando para mapa: ${nombreDelMapaActual}, Equipo1 Canónico: ${equipo1NombreCanonico}, Equipo2 Canónico: ${equipo2NombreCanonico}`);
+    //console.log(`[parseEcoRoundDetailsTable] Iniciando para mapa: ${nombreDelMapaActual}, Equipo1 Canónico: ${equipo1NombreCanonico}, Equipo2 Canónico: ${equipo2NombreCanonico}`);
 
     // Obtener los nombres de los equipos TAL COMO APARECEN EN LAS FILAS DE LA TABLA DE ECONOMÍA
     // Asumimos que la estructura con múltiples div.team en la primera celda es consistente
@@ -713,7 +715,7 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
         if (teamDivs.length >= 2) {
             teamNameInTable1 = pageCheerioInstance(teamDivs.eq(0)).text().replace(/\s+/g, ' ').trim().toLowerCase(); // Nombre del equipo que aparece ARRIBA en las celdas de ronda
             teamNameInTable2 = pageCheerioInstance(teamDivs.eq(1)).text().replace(/\s+/g, ' ').trim().toLowerCase(); // Nombre del equipo que aparece ABAJO
-            console.log(`[parseEcoRoundDetailsTable] Nombres de equipo en tabla eco: '${teamNameInTable1}' (arriba) y '${teamNameInTable2}' (abajo)`);
+            //console.log(`[parseEcoRoundDetailsTable] Nombres de equipo en tabla eco: '${teamNameInTable1}' (arriba) y '${teamNameInTable2}' (abajo)`);
         }
     }
 
@@ -791,20 +793,20 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
                 let assigned = false;
 
                 if (tagArribaLower && tagAbajoLower) { // Solo intentar el matching si tenemos los tags de la tabla
-                    console.log(`[parseEcoRoundDetailsTable] Ronda ${roundNum} - Intentando Coincidencia para tipo de compra:`);
-                    console.log(`  Nombres Canónicos: E1='${cName1Lower}', E2='${cName2Lower}'`);
-                    console.log(`  Tags de Tabla Eco: Arriba='${tagArribaLower}', Abajo='${tagAbajoLower}'`);
+                    //console.log(`[parseEcoRoundDetailsTable] Ronda ${roundNum} - Intentando Coincidencia para tipo de compra:`);
+                    //console.log(`  Nombres Canónicos: E1='${cName1Lower}', E2='${cName2Lower}'`);
+                    //console.log(`  Tags de Tabla Eco: Arriba='${tagArribaLower}', Abajo='${tagAbajoLower}'`);
 
                     if (fuzzyMatchTeamName(cName1Lower, tagArribaLower) && fuzzyMatchTeamName(cName2Lower, tagAbajoLower)) {
                         targetRound[keyTeam1BuyType] = buyTypeTeam1;
                         targetRound[keyTeam2BuyType] = buyTypeTeam2;
                         assigned = true;
-                        console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Tipos de Compra asignados (A). ${equipo1NombreCanonico}(${tagArribaLower})=${buyTypeTeam1}, ${equipo2NombreCanonico}(${tagAbajoLower})=${buyTypeTeam2}`);
+                        //console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Tipos de Compra asignados (A). ${equipo1NombreCanonico}(${tagArribaLower})=${buyTypeTeam1}, ${equipo2NombreCanonico}(${tagAbajoLower})=${buyTypeTeam2}`);
                     } else if (fuzzyMatchTeamName(cName2Lower, tagArribaLower) && fuzzyMatchTeamName(cName1Lower, tagAbajoLower)) {
                         targetRound[keyTeam2BuyType] = buyTypeTeam1; // El tipo de compra del equipo de ARRIBA va al equipo 2 canónico
                         targetRound[keyTeam1BuyType] = buyTypeTeam2; // El tipo de compra del equipo de ABAJO va al equipo 1 canónico
                         assigned = true;
-                        console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Tipos de Compra asignados (B - Invertido). ${equipo2NombreCanonico}(${tagArribaLower})=${buyTypeTeam1}, ${equipo1NombreCanonico}(${tagAbajoLower})=${buyTypeTeam2}`);
+                        //console.log(`[parseEcoRoundDetailsTable] Mapa ${nombreDelMapaActual}, R${roundNum}: Tipos de Compra asignados (B - Invertido). ${equipo2NombreCanonico}(${tagArribaLower})=${buyTypeTeam1}, ${equipo1NombreCanonico}(${tagAbajoLower})=${buyTypeTeam2}`);
                     }
                 }
 
