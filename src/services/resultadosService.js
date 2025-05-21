@@ -837,9 +837,6 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
 }
 
 // Controlador para obtener detalles de un partido
-const getMatchDetailsController = async (req, res) => {
-  const matchId = req.params.id; // ID del partido desde la URL
-  console.log(`Buscando detalles para el match con ID: ${matchId}`);
 
   function parseEconomyPage($pageInstance, mapsArray,team1Name, team2Name){
     console.log("Parseando página de Economy...");
@@ -929,7 +926,6 @@ const getMatchDetailsController = async (req, res) => {
 
     return { overall: overallEconomyResult }; // Devuelve las estadísticas generales
 
-}
 };
 // --- FIN: Funciones Auxiliares ---
 
