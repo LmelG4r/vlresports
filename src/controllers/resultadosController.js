@@ -1,20 +1,52 @@
 // Importamos la nueva función scrapeMatchDetails
 const { scrapeMatchDetails } = require("../services/resultadosService");
 
+function removeNullValues(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(removeNullValues).filter(value => value !== null);
+  } else if (typeof obj === 'object' && obj !== null) {
+    const newObj = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const value = removeNullValues(obj[key]);
+        if (value !== null && !(Array.isArray(value) && value.length === 0 && !Object.keys(obj[key]).length)) { // Evitar arrays vacíos que no eran originalmente vacíos y objetos vacíos
+          // Adicionalmente, podrías decidir si quieres mantener arrays u objetos vacíos
+          // Por ejemplo, si un array se vacía después de quitar nulls, ¿debería quitarse el array?
+          // La condición `!(Array.isArray(value) && value.length === 0 && !Object.keys(obj[key]).length)` intenta ser un poco más inteligente
+          // para no eliminar un array o un objeto que originalmente tenía elementos pero todos eran null.
+          // Podrías simplificarla a `if (value !== null)` si siempre quieres quitar la clave si el valor final es null.
+          newObj[key] = value;
+        }
+      }
+    }
+    // Si después de eliminar nulls el objeto queda vacío, podrías devolver null
+    // para que la clave del objeto también se elimine si así lo deseas.
+    return Object.keys(newObj).length > 0 ? newObj : null; // Opcional: eliminar objetos vacíos
+  }
+  return obj;
+}
+
 // Controlador para obtener detalles de un partido
 const getMatchDetailsController = async (req, res) => {
   const matchId = req.params.id; // ID del partido desde la URL
   console.log(`Buscando detalles para el match con ID: ${matchId}`);
 
   try {
-    // Llamamos a la función para obtener los detalles del partido
-    const matchDetails = await scrapeMatchDetails(matchId);
+    const matchDetailsRaw = await scrapeMatchDetails(matchId);
 
-    if (!matchDetails) {
+    if (!matchDetailsRaw) {
       return res.status(404).json({ message: `No se encontró el match con ID ${matchId}` });
     }
 
-    res.status(200).json(matchDetails); // Devuelve los detalles del partido en formato JSON
+    const matchDetailsCleaned = removeNullValues(matchDetailsRaw); // Limpiar el objeto
+
+    // Si matchDetailsCleaned se vuelve null (porque el objeto raíz solo contenía nulls o se vació)
+    // podrías querer manejarlo, aunque es poco probable para el objeto principal.
+    if (matchDetailsCleaned === null) {
+        return res.status(200).json({}); // Enviar un objeto vacío o manejar como prefieras
+    }
+
+    res.status(200).json(matchDetailsCleaned);
   } catch (error) {
     console.error("Error obteniendo detalles del partido:", error.message);
     res.status(500).json({ message: "Error al obtener detalles del partido", error: error.message });
