@@ -1,46 +1,68 @@
-const { getMatchDetails } = require("../services/resultadosService");
 // Importamos la nueva función scrapeMatchDetails
 const { scrapeMatchDetails } = require("../services/resultadosService");
-function removeNullValues(obj) {
+function removeNullOrNaNValues(obj) {
+  // Si el valor actual es NaN, trátalo como null para que se elimine.
+  if (Number.isNaN(obj)) {
+    return null;
+  }
+  // Si es null, o un primitivo (que no sea objeto), devuélvelo.
+  // El null será filtrado por la lógica del llamador (array.filter o la condición en el bucle del objeto).
+  if (typeof obj !== 'object' || obj === null) {
+    return obj;
+  }
+
+  // Si es un array
   if (Array.isArray(obj)) {
-    return obj.map(removeNullValues).filter(value => value !== null);
-  } else if (typeof obj === 'object' && obj !== null) {
-    const newObj = {};
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        const value = removeNullValues(obj[key]);
-        if (value !== null) { // Evitar arrays vacíos que no eran originalmente vacíos y objetos vacíos
-          // Adicionalmente, podrías decidir si quieres mantener arrays u objetos vacíos
-          // Por ejemplo, si un array se vacía después de quitar nulls, ¿debería quitarse el array?
-          // La condición `!(Array.isArray(value) && value.length === 0 && !Object.keys(obj[key]).length)` intenta ser un poco más inteligente
-          // para no eliminar un array o un objeto que originalmente tenía elementos pero todos eran null.
-          // Podrías simplificarla a `if (value !== null)` si siempre quieres quitar la clave si el valor final es null.
-          newObj[key] = value;
-        }
+    const newArray = obj
+      .map(item => removeNullOrNaNValues(item)) // Limpia recursivamente cada elemento
+      .filter(item => item !== null);         // Filtra los que se hayan convertido en null (originales o NaN)
+    
+    // Decide si quieres que los arrays que quedan vacíos se conviertan en null
+    // return newArray.length > 0 ? newArray : null; // Opción: eliminar arrays vacíos
+    return newArray; // Opción: mantener arrays vacíos como []
+  }
+
+  // Si es un objeto
+  const newObj = {};
+  let propertyAdded = false;
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const value = removeNullOrNaNValues(obj[key]);
+      if (value !== null) { // Si el valor (después de procesar nulls y NaNs) no es null
+        newObj[key] = value;
+        propertyAdded = true;
       }
     }
-    if (Object.keys(newObj).length === 0 && Object.keys(obj).length > 0) {
-      return null;
-    }
-    return newObj;
   }
-  return obj;
+
+  // Decide si quieres que los objetos que quedan vacíos se conviertan en null
+  // (solo si originalmente tenían propiedades)
+  // if (Object.keys(obj).length > 0 && !propertyAdded) {
+  //   return null; // Opción: eliminar objetos que se vaciaron
+  // }
+  return newObj; // Opción: mantener objetos vacíos como {}
 }
 const getMatchDetailsController = async (req, res) => {
   const matchId = req.params.id; // ID del partido desde la URL
   console.log(`Buscando detalles para el match con ID: ${matchId}`);
 
   try {
-    const matchDetailsRaw = await scrapeMatchDetails(matchId);
+    // Llamamos a la función para obtener los detalles del partido
+    const matchDetails = await scrapeMatchDetails(matchId);
 
-    if (!matchDetailsRaw) {
+    if (!matchDetails) {
       return res.status(404).json({ message: `No se encontró el match con ID ${matchId}` });
     }
-
-    const matchDetailsCleaned = removeNullValues(matchDetailsRaw); // Limpiar el objeto
-
-    // Si matchDetailsCleaned se vuelve null (porque el objeto raíz solo contenía nulls o se vació)
-    // podrías querer manejarlo, aunque es poco probable para el objeto principal.
+    console.log("Tiene performance.operator_duel_matrix:", !!(matchDetails.statsAllMaps && matchDetails.statsAllMaps.performance && matchDetails.statsAllMaps.performance.operator_duel_matrix));
+    if (matchDetails.statsAllMaps && matchDetails.statsAllMaps.performance && matchDetails.statsAllMaps.performance.operator_duel_matrix) {
+    console.log("RAW operator_duel_matrix[3]:", JSON.stringify(matchDetails.statsAllMaps.performance.operator_duel_matrix[3], null, 2));
+  }
+    
+    const matchDetailsCleaned = removeNullOrNaNValues(matchDetails); // Limpiar el objeto
+    console.log("Tiene performance.operator_duel_matrix (cleaned):", !!(matchDetailsCleaned && matchDetailsCleaned.statsAllMaps && matchDetailsCleaned.statsAllMaps.performance && matchDetailsCleaned.statsAllMaps.performance.operator_duel_matrix));
+if (matchDetailsCleaned && matchDetailsCleaned.statsAllMaps && matchDetailsCleaned.statsAllMaps.performance && matchDetailsCleaned.statsAllMaps.performance.operator_duel_matrix) {
+    console.log("CLEANED operator_duel_matrix[3]:", JSON.stringify(matchDetailsCleaned.statsAllMaps.performance.operator_duel_matrix[3], null, 2));
+  }    // podrías querer manejarlo, aunque es poco probable para el objeto principal.
     if (matchDetailsCleaned === null) {
         return res.status(200).json({}); // Enviar un objeto vacío o manejar como prefieras
     }
