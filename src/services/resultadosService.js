@@ -2,6 +2,171 @@ const rp = require("request-promise");
 const cheerio = require("cheerio");
 const vlrgg_url = "https://www.vlr.gg"; // Base URL correcta
 
+/**
+ * Calcula la tasa de victorias.
+ * @param {number} won - Número de rondas ganadas.
+ * @param {number} played - Número de rondas jugadas.
+ * @returns {string} - La tasa de victorias como porcentaje o "N/A".
+ */
+function calculateWinRate(won, played) {
+    if (played === 0) {
+        return "N/A";
+    }
+    return ((won / played) * 100).toFixed(2) + "%";
+}
+
+/**
+ * Crea una estructura inicial para las estadísticas de un tipo de compra.
+ * @returns {object}
+ */
+function createBuyTypeStatShell() {
+    return { totalRoundsPlayed: 0, totalRoundsWon: 0, winRate: "N/A" };
+}
+
+/**
+ * Crea una estructura inicial para las estadísticas de un equipo en un mapa.
+ * @param {string} teamName - Nombre del equipo.
+ * @returns {object}
+ */
+function createTeamMapStatsShell(teamName) {
+    return {
+        name: teamName,
+        statsBySide: {
+            attack: { totalRoundsPlayed: 0, totalRoundsWon: 0, winRate: "N/A", statsByBuyType: {} },
+            defense: { totalRoundsPlayed: 0, totalRoundsWon: 0, winRate: "N/A", statsByBuyType: {} }
+        }
+    };
+}
+
+/**
+ * Obtiene el tipo de compra para un equipo específico en una ronda dada.
+ * Considera que el nombre del equipo en la clave de buy type puede no tener espacios.
+ * @param {object} round - El objeto de la ronda.
+ * @param {string} teamName - El nombre canónico del equipo (ej. "Rex Regum Qeon").
+ * @returns {string} - El tipo de compra o "unknown_buy_type".
+ */
+function getTeamBuyTypeFromRound(round, teamName) {
+    // Intenta con el nombre del equipo tal cual, pero sin espacios + "BuyType"
+    const keyWithoutSpaces = teamName.replace(/\s+/g, '') + "BuyType";
+    if (round && typeof round[keyWithoutSpaces] !== 'undefined') {
+        return round[keyWithoutSpaces];
+    }
+
+    // Fallback por si acaso la clave usa espacios de alguna manera (menos probable según el ejemplo)
+    const keyWithSpaces = teamName + "BuyType";
+     if (round && typeof round[keyWithSpaces] !== 'undefined') {
+        return round[keyWithSpaces];
+    }
+    
+    // Si no se encuentra, iterar sobre las claves del objeto round para encontrar una que coincida
+    // (esto es más robusto si hay variaciones inesperadas)
+    const teamNameNormalizedForSearch = teamName.replace(/\s+/g, '').toLowerCase();
+    for (const key in round) {
+        if (key.toLowerCase().startsWith(teamNameNormalizedForSearch) && key.toLowerCase().endsWith("buytype")) {
+            return round[key];
+        }
+    }
+
+    return "unknown_buy_type";
+}
+
+
+/**
+ * Procesa los datos de un partido para agregar estadísticas detalladas de rondas.
+ * Reemplaza el array 'maps' original con las estadísticas procesadas.
+ * @param {object} matchData - El objeto JSON crudo del partido.
+ * @returns {object} - El objeto matchData transformado.
+ */
+function transformMatchDataWithDetailedStats(matchData) {
+    if (!matchData || 
+        !matchData.generalInfo || 
+        !matchData.generalInfo.team1 || !matchData.generalInfo.team1.name ||
+        !matchData.generalInfo.team2 || !matchData.generalInfo.team2.name ||
+        !matchData.maps) {
+        console.error("Estructura de matchData.generalInfo o matchData.maps inválida o incompleta.");
+        return matchData; // Devolver original o manejar error
+    }
+
+    const team1Name = matchData.generalInfo.team1.name; // ej. "Rex Regum Qeon"
+    const team2Name = matchData.generalInfo.team2.name; // ej. "ZETA DIVISION"
+
+    const processedMapsArray = matchData.maps.map(map => {
+        const currentMapStats = {
+            mapName: map.mapName, // ej. "Split"
+            teams: {}
+        };
+
+        currentMapStats.teams[team1Name] = createTeamMapStatsShell(team1Name);
+        currentMapStats.teams[team2Name] = createTeamMapStatsShell(team2Name);
+
+        if (!map.rounds || !Array.isArray(map.rounds)) {
+            console.warn(`Mapa ${currentMapStats.mapName} no tiene rondas o el formato es incorrecto.`);
+            return currentMapStats;
+        }
+
+        map.rounds.forEach(round => {
+            const roundWinningTeamName = round.winningTeamName; // ej. "Rex Regum Qeon"
+            const roundOutcomeDetail = round.outcomeDetail;     // ej. "ct-win"
+
+            // Procesar para cada uno de los dos equipos principales
+            [team1Name, team2Name].forEach(currentTeamName => {
+                const opponentTeamName = (currentTeamName === team1Name) ? team2Name : team1Name;
+                let teamPlayedAsSide = null; // 'attack' o 'defense'
+                const teamWonTheRound = (roundWinningTeamName === currentTeamName);
+
+                // Determinar si currentTeamName jugó en Defensa
+                if ((roundWinningTeamName === currentTeamName && roundOutcomeDetail === "ct-win") ||
+                    (roundWinningTeamName === opponentTeamName && roundOutcomeDetail === "t-win")) {
+                    teamPlayedAsSide = 'defense';
+                }
+                // Determinar si currentTeamName jugó en Ataque
+                else if ((roundWinningTeamName === currentTeamName && roundOutcomeDetail === "t-win") ||
+                         (roundWinningTeamName === opponentTeamName && roundOutcomeDetail === "ct-win")) {
+                    teamPlayedAsSide = 'attack';
+                }
+
+                if (teamPlayedAsSide) {
+                    // Obtener el tipo de compra usando la nueva función getTeamBuyTypeFromRound
+                    const buyTypeForTeamInRound = getTeamBuyTypeFromRound(round, currentTeamName);
+                    
+                    const sideSpecificStats = currentMapStats.teams[currentTeamName].statsBySide[teamPlayedAsSide];
+                    
+                    sideSpecificStats.totalRoundsPlayed++;
+                    if (!sideSpecificStats.statsByBuyType[buyTypeForTeamInRound]) {
+                        sideSpecificStats.statsByBuyType[buyTypeForTeamInRound] = createBuyTypeStatShell();
+                    }
+                    sideSpecificStats.statsByBuyType[buyTypeForTeamInRound].totalRoundsPlayed++;
+
+                    if (teamWonTheRound) {
+                        sideSpecificStats.totalRoundsWon++;
+                        sideSpecificStats.statsByBuyType[buyTypeForTeamInRound].totalRoundsWon++;
+                    }
+                }
+            });
+        });
+
+        // Calcular tasas de victoria para el mapa actual
+        [team1Name, team2Name].forEach(teamNameToCalc => {
+            const teamStatsForMap = currentMapStats.teams[teamNameToCalc];
+            ['attack', 'defense'].forEach(sideToCalc => {
+                const sideStatsRef = teamStatsForMap.statsBySide[sideToCalc];
+                sideStatsRef.winRate = calculateWinRate(sideStatsRef.totalRoundsWon, sideStatsRef.totalRoundsPlayed);
+                for (const buyTypeKey in sideStatsRef.statsByBuyType) {
+                    const buyTypeStatsRef = sideStatsRef.statsByBuyType[buyTypeKey];
+                    buyTypeStatsRef.winRate = calculateWinRate(buyTypeStatsRef.totalRoundsWon, buyTypeStatsRef.totalRoundsPlayed);
+                }
+            });
+        });
+        return currentMapStats;
+    });
+
+    // Reemplazar el array 'maps' original con las estadísticas procesadas
+    return {
+        ...matchData,
+        maps: processedMapsArray // Sobrescribe la propiedad 'maps'
+    };
+}
+
 function scrapeOverview($, tableCheerioObject, statType) { // statType es opcional, más para logging
     const overviewData = [];
     console.log(`[scrapeOverview - ${statType}] Iniciando. Tipo de tableCheerioObject: ${typeof tableCheerioObject}`);
@@ -929,4 +1094,4 @@ function parseEcoRoundDetailsTable(tableCheerio, pageCheerioInstance, mapRoundsA
 };
 // --- FIN: Funciones Auxiliares ---
 
-module.exports = { scrapeMatchDetails /*, scrapeOverview si la exportas también */ };
+module.exports = { scrapeMatchDetails, transformMatchDataWithDetailedStats };
